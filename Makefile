@@ -54,8 +54,15 @@ tty_demo: tty_demo.exe #: Print color for tty, plaintext for file
 	$(call banner, Timing $<)
 	time -p ./$<
 
+plt_example.exe: plt_example.c
+	gcc -fPIC -no-pie -o $@ $<
+
 %.exe: %.c
 	gcc -o $@ $<
+
+plt_example: plt_example.exe #: Get the hang of the Procedure Linkage Table
+	objdump -d -r $< \
+		| awk '/section/ { plt=0 }; /section .plt/ { plt=1 }; { if (plt) { print } }'
 
 clean:  #: Remove any build detritus
 	rm -f *.txt *.exe
