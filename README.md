@@ -14,29 +14,21 @@ the compiler and the dynamic loader. Take a look at this:
 ```console
 $ make speed_demo
 
-# Timing speed_demo_fixed.exe
-seq 1 5 \
-        | xargs -n1 time -f "%U" ./speed_demo_fixed.exe 2>&1 \
-        | awk ' { t+=$1 }; END { print "Average: "t/NR }'
-Average: 2.834
-
 # Timing speed_demo_ifunc.exe
-seq 1 5 \
-        | xargs -n1 time -f "%U" ./speed_demo_ifunc.exe 2>&1 \
-        | awk ' { t+=$1 }; END { print "Average: "t/NR }'
-Average: 7.502
+time -p ./speed_demo_ifunc.exe
+real 9.20
+user 9.02
+sys 0.00
 
 # Timing speed_demo_pointer.exe
-seq 1 5 \
-        | xargs -n1 time -f "%U" ./speed_demo_pointer.exe 2>&1 \
-        | awk ' { t+=$1 }; END { print "Average: "t/NR }'
-Average: 4.598
+time -p ./speed_demo_pointer.exe
+real 5.97
+user 5.91
+sys 0.00
 ```
 
-So right off the bat, GNU IFUNC is a way to memoize a function's address that
-is both less portable and more expensive than function pointers. I am going to
-spend the rest of this page arguing that, because of things like CVE-2024-3094,
-GNU IFUNC is even less secure than C function pointers.
+So right off the bat, GNU IFUNC is a way to memoize a function's address that is
+both less portable and more expensive than regular old function pointers.
 
 ## Overview of CVE-2024-3094
 There are tons of good writeups outlining the high level details
