@@ -7,23 +7,26 @@ help: $(MAKEFILE_LIST) #: Display this Help menu
 		| sort
 
 all: cpu_demo speed_demo tty_demo #: Run all IFUNC demos
+	@echo ""
+test: all
+check: all
 
 cpu_demo: cpu_demo.exe #: Detect CPU features
 	$(call banner, $@)
 	./$<
 
-speed_demo: speed_demo_ifunc.exe speed_demo_native.exe #: Does IFUNC save time?
-	$(call banner, $@)
-	seq 1 5 | xargs -n1 time -f "%U" ./speed_demo_native.exe
-	seq 1 5 | xargs -n1 time -f "%U" ./speed_demo_ifunc.exe
-
-test: all #: Run all IFUNC demos
+speed_demo: speed_demo_fixed.time speed_demo_ifunc.time speed_demo_pointer.time #: Does IFUNC save time?
 
 tty_demo: tty_demo.exe #: Print color for tty, plaintext for file
 	$(call banner, $@)
 	./$<
-	./$< > tty_demo.txt
-	cat tty_demo.txt
+	./$< | tee /dev/null
+
+%.time: %.exe
+	$(call banner, Timing $<)
+	seq 1 5 \
+		| xargs -n1 time -f "%U" ./$< 2>&1 \
+		| awk ' { t+=$$1 }; END { print "Average: "t/NR }'
 
 %.exe: %.c
 	gcc -o $@ $<
