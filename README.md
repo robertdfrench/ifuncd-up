@@ -1,6 +1,5 @@
 # IFUNC'd up
-Source code for my [blog post][1] on GNU IFUNC and its role in
-[CVE-2024-3094][2] (the xz-utils backdoor).
+*Or: How I learned to stop blaming xz-utils for [CVE-2024-3094][2]*
 
 ![I think IFUNC'd up](larry.jpeg)
 
