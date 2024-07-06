@@ -62,6 +62,9 @@ notes][OpenSSH9.8p1] for OpenSSH 9.8 don't even mention CVE-2024-3094.
 The only mention in the developer mailing lists is [Re: D-bus
 integration][openssh-unix-dev].
 
+## Recap
+![Yes, all shared libraries](brain.png)
+
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
 [OpenSSH9.8p1]: https://www.openssh.com/releasenotes.html#9.8p1
 [openssh-unix-dev]: https://marc.info/?l=openssh-unix-dev&m=171288895109872&w=2
