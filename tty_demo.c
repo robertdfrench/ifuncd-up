@@ -5,14 +5,6 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
-// Function declarations
-void print_to_tty(const char *message);
-void print_to_file(const char *message);
-void (*resolve_print_function(void))(const char *);
-
-// IFUNC attribute to use the resolver
-void print_message(const char *message) __attribute__((ifunc("resolve_print_function")));
-
 // Function to print to a terminal
 void print_to_tty(const char *message) {
     // ANSI escape code for green text
@@ -26,6 +18,9 @@ void print_to_tty(const char *message) {
 void print_to_file(const char *message) {
     printf("FILE: %s\n", message);
 }
+
+// IFUNC attribute to use the resolver
+void print_message(const char *message) __attribute__((ifunc("resolve_print_function")));
 
 // Resolver function
 void (*resolve_print_function(void))(const char *) {
