@@ -10,28 +10,31 @@ Utils backdoor that almost infected the world][goodin1] and Thomas
 Roccia's [XZ Outbreak][fr0gger] diagram. For the purposes of this
 article, here is a **very coarse** recap:
 
-* Some Linux distros modify OpenSSH to to play nice with SystemD
-* SystemD depends on xz-utils
+* Some Linux distros modify OpenSSH to depend on SystemD
+* SystemD depends on xz-utils, which uses GNU IFUNC
 * Ergo, xz-utils ends up in the address space of OpenSSH
+* This allows the ifunc resolver to modify any function in OpenSSH
 
 ```mermaid
 flowchart TD
+    G["GNU IFUNC"]
     A["OpenSSH (OpenBSD)"]
     B["OpenSSH Portable<br/>(Linux / macOS / etc)"]
-    C[OpenSSH + SystemD]
+    C[OpenSSH + IFUNC]
     D[xz-utils]
     E["SystemD (Linux)"]
     A -->|Remove OpenBSD specifics| B
     B -->|Add SystemD specifics| C
     D --> E
     E --> C
+    C --> F["Mayhem"]
+    G --> D
 ```
 
-For certain performance-critical operations, xz-utils shipped multiple
-implementations of the same feature, each doing the same thing in slightly
-different ways depending on the host CPU's features. [GNU IFUNC][sourceware] is
-a feature of GCC and ld.so that allows programs to choose the best
-implementation *at runtime*.
+In this writeup, I'd like to argue that GNU IFUNC is the real culprit behind
+this attack. It facilitates nearly-arbitrary manipulation of function definitions at
+runtime, and can help disguise malicious payloads as performance
+optimizations.
 
 ## OpenSSH
 OpenSSH is developed by the OpenBSD community, for the OpenBSD community, and
