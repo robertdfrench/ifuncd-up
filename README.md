@@ -28,7 +28,8 @@ sys 0.00
 ```
 
 So right off the bat, GNU IFUNC is a way to memoize a function's address that is
-both less portable and more expensive than regular old function pointers.
+both less portable and more expensive than regular old function pointers. I'll
+give a more [rigorous analysis](#ifunc-performance-overhead) later.
 
 ## Overview of CVE-2024-3094
 There are tons of good writeups outlining the high level details
@@ -61,6 +62,56 @@ near total lack of discussion on their mailing lists.  The [release
 notes][OpenSSH9.8p1] for OpenSSH 9.8 don't even mention CVE-2024-3094.
 The only mention in the developer mailing lists is [Re: D-bus
 integration][openssh-unix-dev].
+
+
+## ifunc Performance Overhead
+Given that the usual justification for ifunc is performance-related, I wanted to
+see how much overhead *ifunc itself* causes. After all, any function worth
+optimizing is probably called frequently, so the overhead of the function
+invocation is worth acknowledging.
+
+To figure this out, I designed an experiment that would call an *dynamically
+resolved* function over and over again in a tight loop.  Take a look at
+[`speed_demo_ifunc.c`](speed_demo_ifunc.c) and
+[`speed_demo_pointer.c`](speed_demo_pointer.c).  These programs both do the same
+work (incrementing a static counter), but the incrementer functions are resolved
+in different ways: the former leverages GNU IFUNC, and the latter relies on
+plain old function pointers.
+
+Here is the overall logic:
+
+1. Call a resolver function to determine which incrementer to use.
+1. Record this answer somewhere (in the GOT, or as a function pointer).
+1. Call this incrementer function a few billion times to get an estimate of its
+   cost.
+
+As a control, there is also [`speed_demo_fixed.c`] which does the same
+incrementer work but without any dynamically resolve functions. This can be used
+to get a help estimate what part of the runtime is dedicated to function
+invocation vs what part is just doing addition.
+
+The Makefile target `rigorous_speed_demo` makes several runs of each of these
+programs and produces some simple statistics about their performance. These
+numbers will of course change based on your hardware, but the `fixed` test
+should serve as a baseline for comparison.
+
+### Final Results
+| TEST    | LOW  | HIGH | AVG   |
+|---------|------|------|-------|
+| fixed   | 2.93 | 4.20 | 3.477 |
+| ifunc   | 9.50 | 10.56| 9.986 |
+| pointer | 6.23 | 7.44 | 6.791 |
+
+Granted, ifunc does a lot more than function pointers do, so this is not a fair
+comparison. ifunc handles symbol resolution lazily, which makes more sense for
+large libraries (like glibc) -- if a library had to resolve all its dynamic
+symbols during the loading process, it could cause a measurable performance
+penalty even for applications which only need a small portion of those symbols.
+
+But for smaller libraries like xz-utils, there just aren't many symbols that
+need to be resolved in this way. Handling any such resolution when the library
+is loaded would surely go unnoticed (relative to the cost of loading a library
+from disk in the first place).
 
 ## Recap
 ![Yes, all shared libraries](brain.png)

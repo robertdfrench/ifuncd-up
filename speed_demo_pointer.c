@@ -1,26 +1,28 @@
+#include <limits.h>
+#include <stddef.h>
 static int counter = 0;
-const int limit = (2047) * 1024 * 1024;
+static void (*increment_counter)(void) = 0;
 
-void function_a() {
+void fancy_incrementer() {
 	counter += 1;
 }
 
-void function_b() {
+void normal_incrementer() {
 	counter += 1;
 }
 
 void (*resolver(void))(void) {
-	if (counter == 0) {
-		return function_a;
+	if (__builtin_cpu_supports("avx2")) {
+		return fancy_incrementer;
 	} else {
-		return function_b;
+		return normal_incrementer;
 	}
 }
 
 int main() {
-	void (*increment_counter)(void) = resolver();
+	increment_counter = resolver();
 
-	while (counter < limit) {
+	while (counter < INT_MAX) {
 		increment_counter();
 	}
 	return 0;

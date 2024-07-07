@@ -1,7 +1,8 @@
+#include <limits.h>
+
 int main() {
 	int counter = 0;
-	const int limit = (2047) * 1024 * 1024;
-	while (counter < limit) {
+	while (counter < INT_MAX) {
 		counter += 1;
 	}
 	return 0;
