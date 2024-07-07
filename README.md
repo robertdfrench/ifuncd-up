@@ -36,6 +36,29 @@ notes][OpenSSH9.8p1] for OpenSSH 9.8 don't even mention CVE-2024-3094.
 The only mention in the developer mailing lists is [Re: D-bus
 integration][openssh-unix-dev].
 
+I regard this as the first mishap of this software supply-chain failure. The
+malicious code added to xz-utils would not have mattered if OpenSSH had not been
+modified to allow all of SystemD's dependencies into its address space!
+
+Certainly it is necessary to modify software to make it compatible with new
+features and other platforms. Normally we do this by sending these changes back
+to the upstream repository, so that future design decisions can be made in the
+context of our changes. But this is not how OpenSSH works!
+
+OpenSSH is developed by the OpenBSD community, and they do not give one flying
+shit about Linux. OpenSSH is designed to work on OpenBSD, full stop. The
+[OpenSSH Portable][mindrot] project is a best-effort collection of patches which
+replace OpenBSD-specific components with generic POSIX components, and some
+platform-specific code where applicable. Don't get me wrong, this project is
+really good! But my point is that *design choices* by OpenSSH maintainers are
+made without respect to the nuances of other platforms, and it's up to the
+OpenSSH Portable folks to compensate for that.
+
+I say all this to point out that OpenBSD does not use SystemD. Their init system
+is a suite of shell scripts, and there is no library against which services
+could or should link. The notion that someone would need to link OpenSSH against
+*other libraries* in order to get it to start probably never crossed the mind of
+any single OpenBSD developer.
 
 ## What does GNU IFUNC even do?
 It allows you to determine, at runtime, which version of some function you'd
@@ -151,6 +174,7 @@ from disk in the first place).
 [catonmat]: https://catonmat.net/simple-ld-preload-tutorial
 [fr0gger]: https://infosec.exchange/@fr0gger/112189232773640259
 [goodin1]: https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
+[mindrot]: https://anongit.mindrot.org/openssh.git
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
 [OpenSSH9.8p1]: https://www.openssh.com/releasenotes.html#9.8p1
 [openssh-unix-dev]: https://marc.info/?l=openssh-unix-dev&m=171288895109872&w=2
