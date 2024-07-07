@@ -3,34 +3,6 @@
 
 ![I think IFUNC'd up](larry.jpeg)
 
-## What does GNU IFUNC even do?
-It allows you to determine, at runtime, which version of some function you'd
-like to use.
-
-### Isn't that just function pointers?
-No, actually, it's slower than function pointers, and requires custom tooling in
-the compiler and the dynamic loader. Take a look at this:
-
-```console
-$ make speed_demo
-
-# Timing speed_demo_ifunc.exe
-time -p ./speed_demo_ifunc.exe
-real 9.20
-user 9.02
-sys 0.00
-
-# Timing speed_demo_pointer.exe
-time -p ./speed_demo_pointer.exe
-real 5.97
-user 5.91
-sys 0.00
-```
-
-So right off the bat, GNU IFUNC is a way to memoize a function's address that is
-both less portable and more expensive than regular old function pointers. I'll
-give a more [rigorous analysis](#ifunc-performance-overhead) later.
-
 ## Overview of CVE-2024-3094
 There are tons of good writeups outlining the high level details
 of the xz-utils backdoor, like Dan Goodin's [What we know about the xz
@@ -55,6 +27,7 @@ flowchart TD
     E --> C
 ```
 
+
 ## OpenSSH
 The inclusion of another library into the address space of OpenSSHd was
 not something that the OpenSSH developers anticipated, as evidenced by a
@@ -64,7 +37,66 @@ The only mention in the developer mailing lists is [Re: D-bus
 integration][openssh-unix-dev].
 
 
-## ifunc Performance Overhead
+## What does GNU IFUNC even do?
+It allows you to determine, at runtime, which version of some function you'd
+like to use.
+
+### Isn't that just function pointers?
+Yes, it's like function pointers, but slower:
+
+```console
+$ make speed_demo
+
+# Timing speed_demo_ifunc.exe
+time -p ./speed_demo_ifunc.exe
+real 9.20
+user 9.02
+sys 0.00
+
+# Timing speed_demo_pointer.exe
+time -p ./speed_demo_pointer.exe
+real 5.97
+user 5.91
+sys 0.00
+```
+
+I'll give a more [rigorous analysis](#performance-overhead) later in this
+document, but for now just understand that using GNU IFUNC incurs a little extra
+overhead, even though it exists for the sake of performance optimizations.
+
+
+### Can't I accomplish the same thing with `LD_PRELOAD`?
+Sortof! GNU IFUNC allows developers to make runtime decisions about which
+version of a function is best to use. If you know what decisions need to be
+made (and you have a separate copy of your dynamic library for each case) then
+you could accomplish the same thing by specifying the right library with
+`$LD_PRELOAD` like so:
+
+```bash
+#!/bin/bash
+if (cat /proc/cpuinfo | grep flags | grep avx2 > /dev/null); then
+	LD_PRELOAD=./myfunc_avx2.so ./my_app
+else
+	LD_PRELOAD=./myfunc_normal.so ./my_app
+fi
+```
+
+(If you are unfamiliar with `LD_PRELOAD`, check out catonmat's ["A Simple
+LD_PRELOAD Tutorial"][catonmat].)
+
+
+### What Problem does IFUNC solve?
+Suppose you have one application that must run on a wide variety of x86 CPUs.
+Depending on the specific features of the current CPU, you may prefer to use
+different algorithms for the same task. The idea behind IFUNC was to allow
+programs to check for CPU features the first time a function is called, and
+thereafter use an implementation that will be most appropriate for that CPU.
+
+Unfortunately, IFUNC can be used for other purposes, as Sam James explains in
+[FAQ on the xz-utils backdoor (CVE-2024-3094)][thesamesam].
+
+
+### Performance Overhead
 Given that the usual justification for ifunc is performance-related, I wanted to
 see how much overhead *ifunc itself* causes. After all, any function worth
 optimizing is probably called frequently, so the overhead of the function
@@ -95,7 +127,7 @@ programs and produces some simple statistics about their performance. These
 numbers will of course change based on your hardware, but the `fixed` test
 should serve as a baseline for comparison.
 
-### Final Results
+#### Results
 | TEST    | LOW  | HIGH | AVG   |
 |---------|------|------|-------|
 | fixed   | 2.93 | 4.20 | 3.477 |
@@ -116,9 +148,11 @@ from disk in the first place).
 ## Recap
 ![Yes, all shared libraries](brain.png)
 
+[catonmat]: https://catonmat.net/simple-ld-preload-tutorial
 [fr0gger]: https://infosec.exchange/@fr0gger/112189232773640259
 [goodin1]: https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
 [OpenSSH9.8p1]: https://www.openssh.com/releasenotes.html#9.8p1
 [openssh-unix-dev]: https://marc.info/?l=openssh-unix-dev&m=171288895109872&w=2
 [sourceware]: https://sourceware.org/glibc/wiki/GNU_IFUNC
+[thesamesam]: https://gist.github.com/thesamesam/223949d5a074ebc3dce9ee78baad9e27#design
