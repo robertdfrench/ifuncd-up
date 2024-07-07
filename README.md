@@ -65,6 +65,8 @@ integration][openssh-unix-dev].
 ## Recap
 ![Yes, all shared libraries](brain.png)
 
+[fr0gger]: https://infosec.exchange/@fr0gger/112189232773640259
+[goodin1]: https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
 [OpenSSH9.8p1]: https://www.openssh.com/releasenotes.html#9.8p1
 [openssh-unix-dev]: https://marc.info/?l=openssh-unix-dev&m=171288895109872&w=2
