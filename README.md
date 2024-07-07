@@ -27,6 +27,11 @@ flowchart TD
     E --> C
 ```
 
+For certain performance-critical operations, xz-utils shipped multiple
+implementations of the same feature, each doing the same thing in slightly
+different ways depending on the host CPU's features. [GNU IFUNC][sourceware] is
+a feature of GCC and ld.so that allows programs to choose the best
+implementation *at runtime*.
 
 ## OpenSSH
 OpenSSH is developed by the OpenBSD community, for the OpenBSD community, and
@@ -77,7 +82,7 @@ is a suite of shell scripts, and there is no library against which services
 could or should link. The notion that someone would need to link OpenSSH against
 *other libraries* in order to get it to start probably never crossed the mind of
 any single OpenBSD developer. Indeed, there has been nearly zero discussion of
-CVE-2024-3094 on their mailing lists, and he [release notes][OpenSSH9.8p1] for
+CVE-2024-3094 on their mailing lists, and the [release notes][OpenSSH9.8p1] for
 OpenSSH 9.8 don't even mention it.
 
 
