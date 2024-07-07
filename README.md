@@ -85,10 +85,10 @@ Here is the overall logic:
 1. Call this incrementer function a few billion times to get an estimate of its
    cost.
 
-As a control, there is also [`speed_demo_fixed.c`] which does the same
-incrementer work but without any dynamically resolve functions. This can be used
-to get a help estimate what part of the runtime is dedicated to function
-invocation vs what part is just doing addition.
+As a control, there is also [`speed_demo_fixed.c`](speed_demo_fixed.c) which
+does the same incrementer work but without any dynamically resolve functions.
+This can be used to get a help estimate what part of the runtime is dedicated to
+function invocation vs what part is just doing addition.
 
 The Makefile target `rigorous_speed_demo` makes several runs of each of these
 programs and produces some simple statistics about their performance. These
