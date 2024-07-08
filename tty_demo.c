@@ -19,7 +19,9 @@ void print_to_file(const char *message) {
     printf("FILE: %s\n", message);
 }
 
-// IFUNC attribute to use the resolver
+// IFUNC attribute to use the resolver. This tells the compiler to use the
+// "resolve_print_function" function to determine which function to call when
+// the "print_message" function is called. It's only goofy the first time!
 void print_message(const char *message) __attribute__((ifunc("resolve_print_function")));
 
 // Resolver function
