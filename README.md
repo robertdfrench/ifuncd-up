@@ -90,6 +90,16 @@ OpenSSH 9.8 don't even mention it.
 It allows you to determine, at runtime, which version of some function you'd
 like to use.
 
+Suppose you have one application that must run on a wide variety of x86 CPUs.
+Depending on the specific features of the current CPU, you may prefer to use
+different algorithms for the same task. The idea behind IFUNC was to allow
+programs to check for CPU features the first time a function is called, and
+thereafter use an implementation that will be most appropriate for that CPU.
+
+Unfortunately, IFUNC can be used for other purposes, as Sam James explains in
+[FAQ on the xz-utils backdoor (CVE-2024-3094)][thesamesam].
+
+
 ### Isn't that just function pointers?
 Yes, it's like function pointers, but slower:
 
@@ -134,18 +144,7 @@ fi
 LD_PRELOAD Tutorial"][catonmat].)
 
 
-### What Problem does IFUNC solve?
-Suppose you have one application that must run on a wide variety of x86 CPUs.
-Depending on the specific features of the current CPU, you may prefer to use
-different algorithms for the same task. The idea behind IFUNC was to allow
-programs to check for CPU features the first time a function is called, and
-thereafter use an implementation that will be most appropriate for that CPU.
-
-Unfortunately, IFUNC can be used for other purposes, as Sam James explains in
-[FAQ on the xz-utils backdoor (CVE-2024-3094)][thesamesam].
-
-
-### Performance Overhead
+## Performance Overhead
 Given that the usual justification for ifunc is performance-related, I wanted to
 see how much overhead *ifunc itself* causes. After all, any function worth
 optimizing is probably called frequently, so the overhead of the function
