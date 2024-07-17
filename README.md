@@ -36,58 +36,6 @@ this attack. It facilitates nearly-arbitrary manipulation of function definition
 runtime, and can help disguise malicious payloads as performance
 optimizations.
 
-## OpenSSH
-OpenSSH is developed by the OpenBSD community, for the OpenBSD community, and
-they do not give one flying shit about Linux.  The [OpenSSH Portable][mindrot]
-project is a best-effort collection of patches which replace OpenBSD-specific
-components with generic POSIX components, and some platform-specific code where
-applicable. Here's what this ends up looking like in practice:
-
-```mermaid
-flowchart TD
-  subgraph OpenBSD Folks
-    A[OpenBSD]
-    B[OpenSSH]
-    H[bugfixes]
-  end
-  B-->A
-  A-->H
-  H-->B
-
-  B-->C
-  C[OpenSSH Portable]
-
-  subgraph Debian Folks
-    D[Debian]
-    G[bugfixes]
-  end
-  C-->D
-  D-->G
-  G-->C
-
-  subgraph Fedora Folks
-    J[Fedora]
-    K[bugfixes]
-  end
-  C-->J
-  J-->K
-  K-->C
-```
-
-Don't get me wrong, this setup works really well on the whole! It has provided
-Linux users with a reliable SSH server for many years. But my point is that
-*design choices* by OpenSSH maintainers are made without respect to the nuances
-of other platforms, and it's up to the OpenSSH Portable folks to compensate for
-that (for free, out of the goodness of their hearts).
-
-I say all this to point out that OpenBSD does not use SystemD. Their init system
-is a suite of shell scripts, and there is no library against which services
-could or should link. The notion that someone would need to link OpenSSH against
-*other libraries* in order to get it to start probably never crossed the mind of
-any single OpenBSD developer. Indeed, there has been nearly zero discussion of
-CVE-2024-3094 on their mailing lists, and the [release notes][OpenSSH9.8p1] for
-OpenSSH 9.8 don't even mention it.
-
 
 ## What does GNU IFUNC even do?
 It allows you to determine, at runtime, which version of some function you'd
@@ -145,6 +93,59 @@ fi
 
 (If you are unfamiliar with `LD_PRELOAD`, check out catonmat's ["A Simple
 LD_PRELOAD Tutorial"][catonmat].)
+
+
+## OpenSSH
+OpenSSH is developed by the OpenBSD community, for the OpenBSD community, and
+they do not give one flying shit about Linux.  The [OpenSSH Portable][mindrot]
+project is a best-effort collection of patches which replace OpenBSD-specific
+components with generic POSIX components, and some platform-specific code where
+applicable. Here's what this ends up looking like in practice:
+
+```mermaid
+flowchart TD
+  subgraph OpenBSD Folks
+    A[OpenBSD]
+    B[OpenSSH]
+    H[bugfixes]
+  end
+  B-->A
+  A-->H
+  H-->B
+
+  B-->C
+  C[OpenSSH Portable]
+
+  subgraph Debian Folks
+    D[Debian]
+    G[bugfixes]
+  end
+  C-->D
+  D-->G
+  G-->C
+
+  subgraph Fedora Folks
+    J[Fedora]
+    K[bugfixes]
+  end
+  C-->J
+  J-->K
+  K-->C
+```
+
+Don't get me wrong, this setup works really well on the whole! It has provided
+Linux users with a reliable SSH server for many years. But my point is that
+*design choices* by OpenSSH maintainers are made without respect to the nuances
+of other platforms, and it's up to the OpenSSH Portable folks to compensate for
+that (for free, out of the goodness of their hearts).
+
+I say all this to point out that OpenBSD does not use SystemD. Their init system
+is a suite of shell scripts, and there is no library against which services
+could or should link. The notion that someone would need to link OpenSSH against
+*other libraries* in order to get it to start probably never crossed the mind of
+any single OpenBSD developer. Indeed, there has been nearly zero discussion of
+CVE-2024-3094 on their mailing lists, and the [release notes][OpenSSH9.8p1] for
+OpenSSH 9.8 don't even mention it.
 
 
 ## Performance Overhead

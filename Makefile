@@ -17,6 +17,9 @@ cpu_demo: cpu_demo.exe #: Detect CPU features
 	$(call banner, $@)
 	./$<
 
+ifunc_late: ifunc_late.exe
+	./$<
+
 speed_demo: speed_demo_ifunc.time speed_demo_pointer.time #: Is IFUNC slow?
 
 rigorous_speed_demo: clean speed_demo_fixed.stats.txt speed_demo_ifunc.stats.txt speed_demo_pointer.stats.txt #: Really, how slow is it?
@@ -56,6 +59,15 @@ tty_demo: tty_demo.exe #: Print color for tty, plaintext for file
 
 plt_example.exe: plt_example.c
 	gcc -fPIC -no-pie -o $@ $<
+
+modify_got: modify_got.exe modify_got_library.so #: Show that IFUNC allows the GOT to be modified
+	LD_LIBRARY_PATH=. ./$<
+
+modify_got.exe: modify_got.c
+	gcc -o $@ $< -ldl
+
+modify_got_library.so: modify_got_library.c
+	gcc -shared -fPIC -Wl,-z,norelro -o $@ $<
 
 %.exe: %.c
 	gcc -o $@ $<
