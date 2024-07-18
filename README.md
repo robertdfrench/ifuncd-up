@@ -1,7 +1,7 @@
 # IFUNC'd up
 *Or: How I learned to stop blaming xz-utils for [CVE-2024-3094][nvd]*
 
-![I think IFUNC'd up](larry.jpeg)
+![I think IFUNC'd up](img/larry.jpeg)
 
 ## Overview of CVE-2024-3094
 There are tons of good writeups outlining the high level details
@@ -247,7 +247,7 @@ is loaded would surely go unnoticed (relative to the cost of loading a library
 from disk in the first place).
 
 ## Recap
-![Yes, all shared libraries](brain.png)
+![Yes, all shared libraries](img/brain.png)
 
 [agner]: https://www.agner.org/optimize/blog/read.php?i=167
 [catonmat]: https://catonmat.net/simple-ld-preload-tutorial
