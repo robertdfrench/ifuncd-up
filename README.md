@@ -143,8 +143,8 @@ considered adding warnings to compensate for IFUNC's fragility:
 > The glibc solutions required to make IFUNC robust are not in place, and so we
 > should do what we can to warn users that it might break.
 
-It isn't just IFUNC either. Apple Mach-O has a feature called `.symbol_resolver`
-which they ["regret adding"][rjmccall].
+It isn't just IFUNC either. Apple Mach-O has a similar feature called
+`.symbol_resolver` which they ["regret adding"][rjmccall].
 
 ## OpenSSH
 OpenSSH is developed by the OpenBSD community, for the OpenBSD community, and
