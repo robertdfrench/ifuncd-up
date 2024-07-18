@@ -105,8 +105,10 @@ jasoncc's [GNU Indirect Function and x86 ELF ABIs][jasoncc] for more on this.
 To prevent code pages from needing to be modified at runtime, the PLT jumps to
 addresses listed in the GOT, which resides in a data page. 
 
-Partial RELRO means that the GOT is marked read-only after symbols are resolved,
-before `main` begins.
+[Partial RELRO][sidhpurwala] means that the GOT is marked read-only
+after symbols are resolved, before `main` begins. It effectively
+disables lazy binding, forcing all function resolution to occur at
+program startup.
 
 A lot of discussion of IFUNC will say things like "This updates the PLT". That
 isn't true. The PLT is read-only. What is updated is the GOT, and the PLT merely
@@ -263,5 +265,6 @@ from disk in the first place).
 [OpenSSH9.8p1]: https://www.openssh.com/releasenotes.html#9.8p1
 [openssh-unix-dev]: https://marc.info/?l=openssh-unix-dev&m=171288895109872&w=2
 [rjmccall]: https://reviews.llvm.org/D139163#3993795
+[sidhpurwala]: https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
 [sourceware]: https://sourceware.org/glibc/wiki/GNU_IFUNC
 [thesamesam]: https://gist.github.com/thesamesam/223949d5a074ebc3dce9ee78baad9e27#design
