@@ -76,5 +76,14 @@ plt_example: plt_example.exe #: Get the hang of the Procedure Linkage Table
 	objdump -d -r $< \
 		| awk '/section/ { plt=0 }; /section .plt/ { plt=1 }; { if (plt) { print } }'
 
+relro_example: plt_example.exe #: Show our RELRO status
+	checksec --file=./$<
+
+docker_build.txt: Dockerfile
+	docker build --tag ifuncd-up:latest .
+
+enter_container: docker_build.txt #: Run an interactive shell in the container
+	docker run -it -v $(PWD):/workspace ifuncd-up:latest
+
 clean:  #: Remove any build detritus
 	rm -f *.txt *.exe

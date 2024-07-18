@@ -36,7 +36,6 @@ this attack. It facilitates nearly-arbitrary manipulation of function definition
 runtime, and can help disguise malicious payloads as performance
 optimizations.
 
-
 ## What does GNU IFUNC even do?
 It allows you to determine, at runtime, which version of some function you'd
 like to use.
@@ -92,8 +91,58 @@ fi
 ```
 
 (If you are unfamiliar with `LD_PRELOAD`, check out catonmat's ["A Simple
-LD_PRELOAD Tutorial"][catonmat].)
+`LD_PRELOAD` Tutorial"][catonmat].)
 
+## Dynamic Linking
+There are three things at play here:
+* PLT
+* GOT
+* RELRO
+
+The PLT and the GOT enable lazy binding. That is what they are *for*. Check out
+jasoncc's [GNU Indirect Function and x86 ELF ABIs][jasoncc] for more on this.
+
+To prevent code pages from needing to be modified at runtime, the PLT jumps to
+addresses listed in the GOT, which resides in a data page. 
+
+Partial RELRO means that the GOT is marked read-only after symbols are resolved,
+before `main` begins.
+
+A lot of discussion of IFUNC will say things like "This updates the PLT". That
+isn't true. The PLT is read-only. What is updated is the GOT, and the PLT merely
+references entries in the GOT.
+
+Another common bit of misinformation is that people will say IFUNC resolvers run
+when the function is first invoked. This *could* be the case, but because
+Partial RELRO is the default these days, it usually isn't. If the executable
+specifies that it wants Partial RELRO, then all of its indirect functions are
+resolved before `main`.
+
+You can check what (if any) degree of RELRO is enabled by running
+[checksec(1)][checksec]. For example, we can inspect the `plt_example.exe`
+binary like so:
+
+```console
+$ make plt_example.exe
+$ checksec --file=./plt_example.exe
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      Symbols         FORTIFY Fortified       Fortifiable     FILE
+Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   36 Symbols        No    0               0               ./plt_example.exe
+```
+
+## IFUNC is too Confusing to Use Safely
+ifunc is entirely too difficult to use. There are too many [corner cases][nagy], and the
+[official documentation][gnu-cfa] is [scant][sourceware]. This gives users the
+misleading idea that adopting ifunc is straightforward.
+
+Even several years after ifunc became available, the advertised interface [did
+not work][agner]. GCC developers have called it [a mistake][odonell] and have
+considered adding warnings to compensate for IFUNC's fragility:
+
+> The glibc solutions required to make IFUNC robust are not in place, and so we
+> should do what we can to warn users that it might break.
+
+It isn't just IFUNC either. Apple Mach-O has a feature called `.symbol_resolver`
+which they ["regret adding"][rjmccall].
 
 ## OpenSSH
 OpenSSH is developed by the OpenBSD community, for the OpenBSD community, and
@@ -200,12 +249,19 @@ from disk in the first place).
 ## Recap
 ![Yes, all shared libraries](brain.png)
 
+[agner]: https://www.agner.org/optimize/blog/read.php?i=167
 [catonmat]: https://catonmat.net/simple-ld-preload-tutorial
+[checksec]: https://man.archlinux.org/man/checksec.1.en
 [fr0gger]: https://infosec.exchange/@fr0gger/112189232773640259
+[gnu-cfa]: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-ifunc-function-attribute
 [goodin1]: https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
+[jasoncc]: https://jasoncc.github.io/gnu_gcc_glibc/gnu-ifunc.html#relocations-and-pic
 [mindrot]: https://anongit.mindrot.org/openssh.git
+[nagy]: https://sourceware.org/legacy-ml/libc-alpha/2015-11/msg00108.html
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
+[odonell]: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70082#c0
 [OpenSSH9.8p1]: https://www.openssh.com/releasenotes.html#9.8p1
 [openssh-unix-dev]: https://marc.info/?l=openssh-unix-dev&m=171288895109872&w=2
+[rjmccall]: https://reviews.llvm.org/D139163#3993795
 [sourceware]: https://sourceware.org/glibc/wiki/GNU_IFUNC
 [thesamesam]: https://gist.github.com/thesamesam/223949d5a074ebc3dce9ee78baad9e27#design
