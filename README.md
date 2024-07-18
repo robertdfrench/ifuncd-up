@@ -1,7 +1,20 @@
 # IFUNC'd up
-*Or: How I learned to stop blaming xz-utils for [CVE-2024-3094][nvd]*
+*Why you should stop blaming xz-utils for [CVE-2024-3094][nvd]*
 
 ![I think IFUNC'd up](img/larry.jpeg)
+
+CVE-2024-3094, more commonly known as "The xz-utils backdoor", was a
+near miss for global cybersecurity. Had this attack not been discovered
+in the nick of time by [Andres Freund][freund], most of our planet's SSH
+servers would have begun granting root access to the party behind this
+attack.
+
+Unfortunately, too much analysis of this attack has focused on how
+[malicious code][JiaT75] and made its way into the xz-utils repo.
+Instead, I'd like to argue that two longstanding design decisions in
+critical open source software are what made this attack possible:
+[linking OpenSSH against SystemD][biebl], and the existence of [GNU
+IFUNC][sourceware].
 
 ## Overview of CVE-2024-3094
 There are tons of good writeups outlining the high level details
@@ -158,7 +171,7 @@ flowchart TD
   subgraph OpenBSD Folks
     A[OpenBSD]
     B[OpenSSH]
-    H[bugfixes]
+    H[improvements]
   end
   B-->A
   A-->H
@@ -168,16 +181,16 @@ flowchart TD
   C[OpenSSH Portable]
 
   subgraph Debian Folks
-    D[Debian]
-    G[bugfixes]
+    D[Debian SSH]
+    G[improvements]
   end
   C-->D
   D-->G
   G-->C
 
   subgraph Fedora Folks
-    J[Fedora]
-    K[bugfixes]
+    J[Fedora SSH]
+    K[improvements]
   end
   C-->J
   J-->K
@@ -198,6 +211,25 @@ any single OpenBSD developer. Indeed, there has been nearly zero discussion of
 CVE-2024-3094 on their mailing lists, and the [release notes][OpenSSH9.8p1] for
 OpenSSH 9.8 don't even mention it.
 
+What ended up happening is that Debian and Fedora maintained their own
+[SystemD patches][biebl] for their forks of OpenSSH. So the actual
+supply chain for SSH now looks like this:
+
+```mermaid
+flowchart TD
+  A[OpenSSH]
+  B[OpenSSH Portable]
+  C[Debian SSH]
+  D[Fedora SSH]
+  A-->B
+  B-->C
+  B-->D
+  C<-->|SystemD Patches|D
+```
+
+These patches never went into OpenSSH Portable, because the OpenSSH
+Portable folks have explicitly stated ["we're not interested in taking a
+dependency on libsystemd"][djmdjm].
 
 ## Performance Overhead
 Given that the usual justification for ifunc is performance-related, I wanted to
@@ -252,12 +284,16 @@ from disk in the first place).
 ![Yes, all shared libraries](img/brain.png)
 
 [agner]: https://www.agner.org/optimize/blog/read.php?i=167
+[biebl]: https://salsa.debian.org/ssh-team/openssh/-/commit/818791ef8edf087481bd49eb32335c8d7e1953d6
 [catonmat]: https://catonmat.net/simple-ld-preload-tutorial
 [checksec]: https://man.archlinux.org/man/checksec.1.en
+[djmdjm]: https://github.com/openssh/openssh-portable/pull/251#issuecomment-2027935208
 [fr0gger]: https://infosec.exchange/@fr0gger/112189232773640259
+[freund]: https://www.openwall.com/lists/oss-security/2024/03/29/4
 [gnu-cfa]: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-ifunc-function-attribute
 [goodin1]: https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
 [jasoncc]: https://jasoncc.github.io/gnu_gcc_glibc/gnu-ifunc.html#relocations-and-pic
+[JiaT75]: https://github.com/tukaani-project/xz/commit/cf44e4b7f5dfdbf8c78aef377c10f71e274f63c0
 [mindrot]: https://anongit.mindrot.org/openssh.git
 [nagy]: https://sourceware.org/legacy-ml/libc-alpha/2015-11/msg00108.html
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
