@@ -130,15 +130,25 @@ can adapt your work to my needs without having to bother you about it. But it
 can also lead to a degree of indirection that prevents critical design
 assumptions (such as a traditional dynamic linking process) from being upheld.
 
+
 ## What does GNU IFUNC even do?
 It allows you to determine, at runtime, which version of some function you'd
-like to use.
+like to use. It does this by allowing you to run **arbitrary code** to
+influence how the linker resolves symbols.
+
+![](memes/ifunc_hard_right.png)
 
 Suppose you have one application that must run on a wide variety of x86 CPUs.
 Depending on the specific features of the current CPU, you may prefer to use
 different algorithms for the same task. The idea behind IFUNC was to allow
 programs to check for CPU features the first time a function is called, and
 thereafter use an implementation that will be most appropriate for that CPU.
+
+Take a look at [`tty_demo.c`](src/tty_demo.c) for an example. This is a
+toy program that prints "Hello World!" when its stdout is a file, but
+prints that message using green text if its output is a terminal. It
+uses IFUNC to load the appropriate implementation when the program
+starts.
 
 Unfortunately, IFUNC can be used for other purposes, as Sam James explains in
 [FAQ on the xz-utils backdoor (CVE-2024-3094)][thesamesam].

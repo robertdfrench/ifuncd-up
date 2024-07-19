@@ -19,14 +19,22 @@ void print_to_file(const char *message) {
     printf("FILE: %s\n", message);
 }
 
-// IFUNC attribute to use the resolver. This tells the compiler to use the
-// "resolve_print_function" function to determine which function to call when
-// the "print_message" function is called. It's only goofy the first time!
+// This is how you declare an IFUNC.
+//
+// This attribute tells gcc to invoke the "resolve_print_function" function
+// during the link phase in order to determine which implementation of
+// "print_message" should be used.
 void print_message(const char *message) __attribute__((ifunc("resolve_print_function")));
 
 // Resolver function
+//
+// This function returns a function pointer to the implementation we'd like to
+// use for "print_message". 
 void (*resolve_print_function(void))(const char *) {
     struct termios term;
+
+    // Calling another dynamic function inside the resolver might not be safe in
+    // general, but this example is very silly anyhow.
     int result = ioctl(STDOUT_FILENO, TCGETS, &term);
     if (result == 0) {
         // stdout is a terminal
