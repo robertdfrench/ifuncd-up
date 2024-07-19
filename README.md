@@ -93,7 +93,7 @@ beyond what OpenSSH Portable provides. For example, Apple adds the
 [`--apple-use-keychain`][github] flag to `ssh-add` to help it integrate with the
 macOS password manager. In the case of CVE-2024-3094, Fedora and Debian
 maintained their own [SystemD patches][biebl] for their forks of OpenSSH. So the
-*actual* supply chain for SSH now looked like this:
+*actual* supply chain for SSH began to look like this:
 
 ```mermaid
 flowchart TD
@@ -326,6 +326,7 @@ single CPU feature to check.
 [djmdjm]: https://github.com/openssh/openssh-portable/pull/251#issuecomment-2027935208
 [fr0gger]: https://infosec.exchange/@fr0gger/112189232773640259
 [freund]: https://www.openwall.com/lists/oss-security/2024/03/29/4
+[github]: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=mac#adding-your-ssh-key-to-the-ssh-agent
 [gnu-cfa]: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-ifunc-function-attribute
 [goodin1]: https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
 [jasoncc]: https://jasoncc.github.io/gnu_gcc_glibc/gnu-ifunc.html#relocations-and-pic
