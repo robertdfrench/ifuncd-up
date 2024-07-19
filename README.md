@@ -184,7 +184,7 @@ fi
 (If you are unfamiliar with `LD_PRELOAD`, check out catonmat's ["A Simple
 `LD_PRELOAD` Tutorial"][catonmat].)
 
-## Dynamic Linking
+### How does GNU IFUNC work?
 There are three things at play here:
 * PLT
 * GOT
@@ -222,7 +222,23 @@ RELRO           STACK CANARY      NX            PIE             RPATH      RUNPA
 Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   36 Symbols        No    0               0               ./plt_example.exe
 ```
 
-## IFUNC is too Confusing to Use Safely
+## IFUNC is Probably a Bad Idea
+GNU IFUNC is difficult to implement, hard to use correctly, and (as an
+alleged performance tool) isn't much faster than alternatives. As we've
+seen with CVE-2024-3094, it is also a very powerful tool for software
+supply-chain attacks.
+
+IFUNC is used extensively within the GNU C Library, and that's probably
+fine.  Those are the folks for whom it was originally developed, and
+they are closely connected with the compiler and linker teams who
+actually implement IFUNC. They are in the best position to understand
+the tradeoffs, and there are tons of libc functions that benefit from
+CPU-specific implementations. I believe we should consider IFUNC to be
+an internal interface for glibc, and limit its use in other
+applications.
+
+
+### It's too Confusing to Use Safely
 ifunc is entirely too difficult to use. There are too many [corner cases][nagy], and the
 [official documentation][gnu-cfa] is [scant][sourceware]. This gives users the
 misleading idea that adopting ifunc is straightforward.
@@ -238,7 +254,7 @@ It isn't just IFUNC either. Apple Mach-O has a similar feature called
 `.symbol_resolver` which they ["regret adding"][rjmccall].
 
 
-## Performance Overhead
+### It isn't Much Faster than Alternatives
 Given that the usual justification for ifunc is performance-related, I wanted to
 see how much overhead *ifunc itself* causes. After all, any function worth
 optimizing is probably called frequently, so the overhead of the function
@@ -285,7 +301,7 @@ optimizing are much more expensive than the "increment by one" functions that we
 are analyzing here. It is interesting because GNU IFUNC claims to be a boon for
 performance.
 
-### Performance of Other Techniques
+#### Performance of Other Techniques
 There are other techniques which are slower than ifunc. Take a look at the
 `super_rigorous_speed_demo`, which brings to other experiments into play:
 [`speed_demo_upfront.c`](src/speed_demo_upfront.c) and
