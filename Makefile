@@ -8,7 +8,7 @@ help: $(MAKEFILE_LIST) #: Display this Help menu
 		| column -t -s':' \
 		| sort
 
-rll: cpu_demo speed_demo tty_demo #: Run all IFUNC demos
+all: cpu_demo speed_demo tty_demo #: Run all IFUNC demos
 	@echo ""
 test: all
 check: all
@@ -20,7 +20,7 @@ cpu_demo: cpu_demo.exe #: Detect CPU features
 ifunc_late: ifunc_late.exe
 	./$<
 
-speed_demo: speed_demo_ifunc.time speed_demo_pointer.time #: Is IFUNC slow?
+speed_demo: speed_demo_ifunc.time speed_demo_pointer.time speed_demo_fixed.time speed_demo_always.time speed_demo_upfront.time #: Is IFUNC slow?
 
 rigorous_speed_demo: clean speed_demo_fixed.stats.txt speed_demo_ifunc.stats.txt speed_demo_pointer.stats.txt #: Really, how slow is it?
 	$(call banner, Final Results)
