@@ -237,13 +237,13 @@ see how much overhead *ifunc itself* causes. After all, any function worth
 optimizing is probably called frequently, so the overhead of the function
 invocation is worth acknowledging.
 
-To figure this out, I designed an experiment that would call an *dynamically
+To figure this out, I designed an experiment that would call a *dynamically
 resolved* function over and over again in a tight loop.  Take a look at
-[`speed_demo_ifunc.c`](speed_demo_ifunc.c) and
-[`speed_demo_pointer.c`](speed_demo_pointer.c).  These programs both do the same
-work (incrementing a static counter), but the incrementer functions are resolved
-in different ways: the former leverages GNU IFUNC, and the latter relies on
-plain old function pointers.
+[`speed_demo_ifunc.c`](src/speed_demo_ifunc.c) and
+[`speed_demo_pointer.c`](src/speed_demo_pointer.c).  These programs both do the
+same work (incrementing a static counter), but the incrementer functions are
+resolved in different ways: the former leverages GNU IFUNC, and the latter
+relies on plain old function pointers.
 
 Here is the overall logic:
 
@@ -252,7 +252,7 @@ Here is the overall logic:
 1. Call this incrementer function a few billion times to get an estimate of its
    cost.
 
-As a control, there is also [`speed_demo_fixed.c`](speed_demo_fixed.c) which
+As a control, there is also [`speed_demo_fixed.c`](src/speed_demo_fixed.c) which
 does the same incrementer work but without any dynamically resolve functions.
 This can be used to get a help estimate what part of the runtime is dedicated to
 function invocation vs what part is just doing addition.
@@ -262,23 +262,52 @@ programs and produces some simple statistics about their performance. These
 numbers will of course change based on your hardware, but the `fixed` test
 should serve as a baseline for comparison.
 
-#### Results
-| TEST    | LOW  | HIGH | AVG   |
-|---------|------|------|-------|
-| fixed   | 2.93 | 4.20 | 3.477 |
-| ifunc   | 9.50 | 10.56| 9.986 |
-| pointer | 6.23 | 7.44 | 6.791 |
+| *Results* | LOW  | HIGH | AVG   |
+|-----------|------|------|-------|
+| fixed     | 2.93 | 4.20 | 3.477 |
+| ifunc     | 9.50 | 10.56| 9.986 |
+| pointer   | 6.23 | 7.44 | 6.791 |
 
-Granted, ifunc does a lot more than function pointers do, so this is not a fair
-comparison. ifunc handles symbol resolution lazily, which makes more sense for
-large libraries (like glibc) -- if a library had to resolve all its dynamic
-symbols during the loading process, it could cause a measurable performance
-penalty even for applications which only need a small portion of those symbols.
+What we see here is that ifunc has a not-insignificant overhead compared to
+using a plain-old function pointer. On average, on my hardware, it takes about
+twice as long to call an ifunc function 2 billion times as it does to invoke a
+function pointer 2 billion times.
 
-But for smaller libraries like xz-utils, there just aren't many symbols that
-need to be resolved in this way. Handling any such resolution when the library
-is loaded would surely go unnoticed (relative to the cost of loading a library
-from disk in the first place).
+Does this matter in real life? Absolutely not. Functions that are worth
+optimizing are much more expensive than the "increment by one" functions that we
+are analyzing here. It is interesting because GNU IFUNC claims to be a boon for
+performance.
+
+### Performance of Other Techniques
+There are other techniques which are slower than ifunc. Take a look at the
+`super_rigorous_speed_demo`, which brings to other experiments into play:
+[`speed_demo_upfront.c`](src/speed_demo_upfront.c) and
+[`speed_demo_always.c`](src/speed_demo_always.c).
+
+`speed_demo_upfront.c` behaves similarly to `speed_demo_pointer.c`, except that
+it stores the results of the cpu feature checks in global variables rather than
+keeping track of a function pointer. This still requires a "resolver" function
+to run first to determine which implementation gets used, based on the value of
+these global variables. This technique turns out to be slower than ifunc, but it
+is also safer than storing function pointers: whereas function pointers can be
+set to arbitrary values, boolean flags cannot. So an attacker able to modify
+these variables can make the program *slower*, but cannot make the program behave
+*differently*.
+
+`speed_demo_always.c` is designed to be the slowest technique -- it checks all
+the necessary CPU features every time an implementation is needed and picks one
+on the fly. Curiously, this technique is not significantly slower than anything
+else. It is only marginally slower than ifunc in the case where we have just a
+single CPU feature to check. 
+
+| TEST    | LOW  | HIGH  | AVG     |
+|---------|------|-------|---------|
+| fixed   | 5.02 | 5.70  | 5.37    |
+| pointer | 6.40 | 7.02  | 6.66    |
+| ifunc   | 8.56 | 11.11 | 9.64    |
+| upfront | 9.24 | 9.41  | 9.33333 |
+| always  | 10.07| 10.56 | 10.2333 |
+
 
 ## Recap
 ![Yes, all shared libraries](img/brain.png)

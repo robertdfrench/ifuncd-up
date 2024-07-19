@@ -8,7 +8,7 @@ help: $(MAKEFILE_LIST) #: Display this Help menu
 		| column -t -s':' \
 		| sort
 
-all: cpu_demo speed_demo tty_demo #: Run all IFUNC demos
+rll: cpu_demo speed_demo tty_demo #: Run all IFUNC demos
 	@echo ""
 test: all
 check: all
@@ -26,8 +26,18 @@ rigorous_speed_demo: clean speed_demo_fixed.stats.txt speed_demo_ifunc.stats.txt
 	$(call banner, Final Results)
 	@echo "TEST	LOW	HIGH	AVG"
 	@printf "fixed\t"; cat speed_demo_fixed.stats.txt
-	@printf "ifunc\t"; cat speed_demo_ifunc.stats.txt
 	@printf "pointer\t"; cat speed_demo_pointer.stats.txt
+	@printf "ifunc\t"; cat speed_demo_ifunc.stats.txt
+	@echo ""
+
+super_rigorous_speed_demo: clean speed_demo_fixed.stats.txt speed_demo_ifunc.stats.txt speed_demo_pointer.stats.txt speed_demo_always.stats.txt speed_demo_upfront.stats.txt #: Really, how slow is it?
+	$(call banner, Final Results)
+	@echo "TEST	LOW	HIGH	AVG"
+	@printf "fixed\t"; cat speed_demo_fixed.stats.txt
+	@printf "pointer\t"; cat speed_demo_pointer.stats.txt
+	@printf "ifunc\t"; cat speed_demo_ifunc.stats.txt
+	@printf "upfront\t"; cat speed_demo_upfront.stats.txt
+	@printf "always\t"; cat speed_demo_always.stats.txt
 	@echo ""
 
 %.stats.txt: %.low.txt %.high.txt %.avg.txt
