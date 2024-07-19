@@ -1,7 +1,7 @@
 # IFUNC'd up
 *Why you should stop blaming xz-utils for [CVE-2024-3094][nvd]*
 
-![I think IFUNC'd up](img/larry.jpeg)
+![I think IFUNC'd up](memes/larry.jpeg)
 
 CVE-2024-3094, more commonly known as "The xz-utils backdoor", was a
 near miss for global cybersecurity. Had this attack not been discovered
@@ -336,7 +336,7 @@ single CPU feature to check.
 
 
 ## Recap
-![Yes, all shared libraries](img/brain.png)
+![Yes, all shared libraries](memes/brain.png)
 
 [agner]: https://www.agner.org/optimize/blog/read.php?i=167
 [biebl]: https://salsa.debian.org/ssh-team/openssh/-/commit/818791ef8edf087481bd49eb32335c8d7e1953d6
