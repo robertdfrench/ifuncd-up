@@ -91,9 +91,12 @@ work on platforms like Linux, macOS, FreeBSD, and even Windows.
 But it doesn't stop there. Some operating systems apply further customization
 beyond what OpenSSH Portable provides. For example, Apple adds the
 [`--apple-use-keychain`][github] flag to `ssh-add` to help it integrate with the
-macOS password manager. In the case of CVE-2024-3094, Fedora and Debian
-maintained their own [SystemD patches][biebl] for their forks of OpenSSH. So the
-*actual* supply chain for SSH began to look like this:
+macOS password manager.
+
+In the case of CVE-2024-3094, Fedora and Debian maintained their own
+[SystemD patches][biebl] for their forks of OpenSSH in order to fix a
+[race condition around `sshd` restarts][schmidt]. So the *actual* supply
+chain for SSH began to look like this:
 
 ```mermaid
 flowchart TD
@@ -354,6 +357,7 @@ single CPU feature to check.
 [OpenSSH9.8p1]: https://www.openssh.com/releasenotes.html#9.8p1
 [openssh-unix-dev]: https://marc.info/?l=openssh-unix-dev&m=171288895109872&w=2
 [rjmccall]: https://reviews.llvm.org/D139163#3993795
+[schmidt]: https://bugzilla.redhat.com/show_bug.cgi?id=1381997#c4
 [sidhpurwala]: https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
 [sourceware]: https://sourceware.org/glibc/wiki/GNU_IFUNC
 [thesamesam]: https://gist.github.com/thesamesam/223949d5a074ebc3dce9ee78baad9e27#design
