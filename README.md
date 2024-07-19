@@ -9,24 +9,23 @@ in the nick of time by [Andres Freund][freund], most of our planet's SSH
 servers would have begun granting root access to the party behind this
 attack.
 
-Unfortunately, too much analysis of this attack has focused on how
-[malicious code][JiaT75] and made its way into the xz-utils repo.
-Instead, I'd like to argue that two longstanding design decisions in
-critical open source software are what made this attack possible:
-[linking OpenSSH against SystemD][biebl], and the existence of [GNU
-IFUNC][sourceware].
+Unfortunately, too much analysis has focused on how [malicious code][JiaT75] and
+made its way into the xz-utils repo.  Instead, I'd like to argue that two
+longstanding design decisions in critical open source software are what made
+this attack possible: [linking OpenSSH against SystemD][biebl], and the
+existence of [GNU IFUNC][sourceware].
 
-## Overview of CVE-2024-3094
-There are tons of good writeups outlining the high level details
-of the xz-utils backdoor, like Dan Goodin's [What we know about the xz
-Utils backdoor that almost infected the world][goodin1] and Thomas
-Roccia's [XZ Outbreak][fr0gger] diagram. For the purposes of this
-article, here is a **very coarse** recap:
+## Quick Recap of CVE-2024-3094
+There are tons of good writeups outlining the high level details of the xz-utils
+backdoor, like Dan Goodin's [What we know about the xz Utils backdoor that
+almost infected the world][goodin1] and Thomas Roccia's [XZ Outbreak][fr0gger]
+diagram. We don't need to rehash all that here, so the purposes of this article,
+here is a **very coarse** recap:
 
 * Some Linux distros modify OpenSSH to depend on SystemD
 * SystemD depends on xz-utils, which uses GNU IFUNC
 * Ergo, xz-utils ends up in the address space of OpenSSH
-* This allows the ifunc resolver to modify any function in OpenSSH
+* This allows ifunc to modify code in the SSH server
 
 ```mermaid
 flowchart TD
@@ -44,10 +43,89 @@ flowchart TD
     G --> D
 ```
 
-In this writeup, I'd like to argue that GNU IFUNC is the real culprit behind
-this attack. It facilitates nearly-arbitrary manipulation of function definitions at
-runtime, and can help disguise malicious payloads as performance
-optimizations.
+## Why do Linux Distros modify OpenSSH?
+The short answer is that they have to. OpenSSH is developed by the OpenBSD
+community, for the OpenBSD community, and they do not give one flying shit about
+Linux.  The [OpenSSH Portable][mindrot] project is a best-effort collection of
+patches which replace OpenBSD-specific components with generic POSIX components,
+and some platform-specific code where applicable. The software supply-chain for
+SSH ends up looking something like this in practice:
+
+```mermaid
+flowchart TD
+  subgraph OpenBSD Folks
+    A[OpenBSD]
+    B[OpenSSH]
+    H[improvements]
+  end
+  B-->A
+  A-->H
+  H-->B
+
+  B-->C
+  C[OpenSSH Portable]
+
+  subgraph Debian Folks
+    D[Debian SSH]
+    G[improvements]
+  end
+  C-->D
+  D-->G
+  G-->C
+
+  subgraph Fedora Folks
+    J[Fedora SSH]
+    K[improvements]
+  end
+  C-->J
+  J-->K
+  K-->C
+```
+
+OpenBSD's version of OpenSSH is upstream from everything else, and most
+improvements to it come from within the OpenBSD community. These changes flow
+downstream to the OpenSSH Portable project, which attempts to re-implement new
+features in ways that aren't specific to OpenBSD. This is what allows SSH to
+work on platforms like Linux, macOS, FreeBSD, and even Windows. 
+
+But it doesn't stop there. Some operating systems apply further customization
+beyond what OpenSSH Portable provides. For example, Apple adds the
+[`--apple-use-keychain`][github] flag to `ssh-add` to help it integrate with the
+macOS password manager. In the case of CVE-2024-3094, Fedora and Debian
+maintained their own [SystemD patches][biebl] for their forks of OpenSSH. So the
+*actual* supply chain for SSH now looked like this:
+
+```mermaid
+flowchart TD
+  A[OpenSSH]
+  B[OpenSSH Portable]
+  C[Debian SSH]
+  D[Fedora SSH]
+  A-->B
+  B-->C
+  B-->D
+  C<-->|SystemD Patches|D
+```
+
+These patches never went into OpenSSH Portable, because the OpenSSH
+Portable folks have explicitly stated ["we're not interested in taking a
+dependency on libsystemd"][djmdjm]. And they never went into upstream OpenSSH,
+because OpenBSD doesn't have anything that resembles SystemD.
+
+This seems harmless enough, but it's an example of a much large problem in Open
+Source, particularly in Linux: critical components of the operating system are
+developed by people who don't know each other, and don't talk to each other. 
+
+* The folks patching OpenSSH for SystemD might not have known that SystemD
+  depends on xz-utils.
+* The SystemD folks might not have known that xz-utils began leveraging ifunc.
+* The folks designing OpenSSH do so on a platform that doesn't even *have*
+  ifunc, or anything that resembles it.
+
+In some sense, this breakdown in communication is a feature of open source: I
+can adapt your work to my needs without having to bother you about it. But it
+can also lead to a degree of indirection that prevents critical design
+assumptions (such as a traditional dynamic linking process) from being upheld.
 
 ## What does GNU IFUNC even do?
 It allows you to determine, at runtime, which version of some function you'd
@@ -159,77 +237,6 @@ considered adding warnings to compensate for IFUNC's fragility:
 It isn't just IFUNC either. Apple Mach-O has a similar feature called
 `.symbol_resolver` which they ["regret adding"][rjmccall].
 
-## OpenSSH
-OpenSSH is developed by the OpenBSD community, for the OpenBSD community, and
-they do not give one flying shit about Linux.  The [OpenSSH Portable][mindrot]
-project is a best-effort collection of patches which replace OpenBSD-specific
-components with generic POSIX components, and some platform-specific code where
-applicable. Here's what this ends up looking like in practice:
-
-```mermaid
-flowchart TD
-  subgraph OpenBSD Folks
-    A[OpenBSD]
-    B[OpenSSH]
-    H[improvements]
-  end
-  B-->A
-  A-->H
-  H-->B
-
-  B-->C
-  C[OpenSSH Portable]
-
-  subgraph Debian Folks
-    D[Debian SSH]
-    G[improvements]
-  end
-  C-->D
-  D-->G
-  G-->C
-
-  subgraph Fedora Folks
-    J[Fedora SSH]
-    K[improvements]
-  end
-  C-->J
-  J-->K
-  K-->C
-```
-
-Don't get me wrong, this setup works really well on the whole! It has provided
-Linux users with a reliable SSH server for many years. But my point is that
-*design choices* by OpenSSH maintainers are made without respect to the nuances
-of other platforms, and it's up to the OpenSSH Portable folks to compensate for
-that (for free, out of the goodness of their hearts).
-
-I say all this to point out that OpenBSD does not use SystemD. Their init system
-is a suite of shell scripts, and there is no library against which services
-could or should link. The notion that someone would need to link OpenSSH against
-*other libraries* in order to get it to start probably never crossed the mind of
-any single OpenBSD developer. Indeed, there has been nearly zero discussion of
-CVE-2024-3094 on their mailing lists, and the [release notes][OpenSSH9.8p1] for
-OpenSSH 9.8 don't even mention it.
-
-What ended up happening is that Debian and Fedora maintained their own
-[SystemD patches][biebl] for their forks of OpenSSH. So the actual
-supply chain for SSH now looks like this:
-
-```mermaid
-flowchart TD
-  A[OpenSSH]
-  B[OpenSSH Portable]
-  C[Debian SSH]
-  D[Fedora SSH]
-  A-->B
-  B-->C
-  B-->D
-  C<-->|SystemD Patches|D
-```
-
-These patches never went into OpenSSH Portable, because the OpenSSH
-Portable folks have explicitly stated ["we're not interested in taking a
-dependency on libsystemd"][djmdjm].
 
 ## Performance Overhead
 Given that the usual justification for ifunc is performance-related, I wanted to
