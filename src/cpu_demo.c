@@ -39,7 +39,7 @@ static void* resolve_cpu_info(void) {
 }
 
 int main() {
-	print_cpu_info(); // Runs resolver first, then cpu-specific function
-	print_cpu_info(); // Runs the cpu-specific function without the resolver
+        printf("Entering main\n");
+	print_cpu_info();
 	return 0;
 }

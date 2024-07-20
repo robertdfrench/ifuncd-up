@@ -144,14 +144,20 @@ different algorithms for the same task. The idea behind IFUNC was to allow
 programs to check for CPU features the first time a function is called, and
 thereafter use an implementation that will be most appropriate for that CPU.
 
-Take a look at [`tty_demo.c`](src/tty_demo.c) for an example. This is a
-toy program that prints "Hello World!" when its stdout is a file, but
-prints that message using green text if its output is a terminal. It
+Take a look at [`cpu_demo.c`](src/cpu_demo.c). This file shows the most
+common use of IFUNC: it asks the CPU whether or not it supports certain
+features, and provides a different *implementation* of a function
+depending on what features are supported. In this case, our function
+`print_cpu_info` will end up printing either "AVX2 is present" or
+"SSE4.2 is present" depending on how ancient your CPU is.
+
+Unfortunately, IFUNC can be used for other purposes, as Sam James
+explains in [FAQ on the xz-utils backdoor (CVE-2024-3094)][thesamesam].
+You can see an example of this in [`tty_demo.c`](src/tty_demo.c).  This
+is a toy program that prints "Hello World!" when its stdout is a file,
+but prints that message using green text if its output is a terminal. It
 uses IFUNC to load the appropriate implementation when the program
 starts.
-
-Unfortunately, IFUNC can be used for other purposes, as Sam James explains in
-[FAQ on the xz-utils backdoor (CVE-2024-3094)][thesamesam].
 
 
 ### Isn't that just function pointers?
@@ -202,6 +208,8 @@ There are three things at play here:
 * PLT
 * GOT
 * RELRO
+
+![](boromir_plt.png)
 
 The PLT and the GOT enable lazy binding. That is what they are *for*. Check out
 jasoncc's [GNU Indirect Function and x86 ELF ABIs][jasoncc] for more on this.
