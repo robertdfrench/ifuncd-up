@@ -244,6 +244,7 @@ Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RU
 ```
 
 ## IFUNC is Probably a Bad Idea
+![](memes/ifunc_change_my_mind.png)
 GNU IFUNC is difficult to implement, hard to use correctly, and (as an
 alleged performance tool) isn't much faster than alternatives. As we've
 seen with CVE-2024-3094, it is also a very powerful tool for software
