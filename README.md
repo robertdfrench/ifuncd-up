@@ -52,7 +52,7 @@ flowchart TD
 ## Why do Linux Distros modify OpenSSH?
 The short answer is that they have to. OpenSSH is developed by the
 OpenBSD community, for the OpenBSD community, and they do not give a
-flying shit about Linux.  The [OpenSSH Portable][mindrot] project is a
+flying Fedora about Linux.  The [OpenSSH Portable][mindrot] project is a
 best-effort collection of patches which replace OpenBSD-specific
 components with generic POSIX components, and some platform-specific
 code where applicable. The software supply-chain for SSH ends up looking
