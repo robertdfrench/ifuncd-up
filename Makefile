@@ -1,5 +1,5 @@
 banner=@echo "\n\033[0;31m\# $(strip $(1))\033[0m"
-EXECUTABLES=$(patsubst src/%.c, %.exe, $(wildcard src/*.c))
+EXECUTABLES=$(patsubst code/%.c, %.exe, $(wildcard code/*.c))
 .SECONDARY: $(EXECUTABLES)
 
 help: $(MAKEFILE_LIST) #: Display this Help menu
@@ -67,19 +67,19 @@ tty_demo: tty_demo.exe #: Print color for tty, plaintext for file
 	$(call banner, Timing $<)
 	time -p ./$<
 
-plt_example.exe: src/plt_example.c
+plt_example.exe: code/plt_example.c
 	gcc -fPIC -no-pie -o $@ $<
 
 modify_got: modify_got.exe modify_got_library.so #: Show that IFUNC allows the GOT to be modified
 	LD_LIBRARY_PATH=. ./$<
 
-modify_got.exe: src/modify_got.c
+modify_got.exe: code/modify_got.c
 	gcc -o $@ $< -ldl
 
-modify_got_library.so: src/modify_got_library.c
+modify_got_library.so: code/modify_got_library.c
 	gcc -shared -fPIC -Wl,-z,norelro -o $@ $<
 
-%.exe: src/%.c
+%.exe: code/%.c
 	gcc -o $@ $<
 
 plt_example: plt_example.exe #: Get the hang of the Procedure Linkage Table
