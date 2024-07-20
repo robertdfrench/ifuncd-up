@@ -144,7 +144,7 @@ different algorithms for the same task. The idea behind IFUNC was to allow
 programs to check for CPU features the first time a function is called, and
 thereafter use an implementation that will be most appropriate for that CPU.
 
-Take a look at [`cpu_demo.c`](src/cpu_demo.c). This file shows the most
+Take a look at [`cpu_demo.c`](code/cpu_demo.c). This file shows the most
 common use of IFUNC: it asks the CPU whether or not it supports certain
 features, and provides a different *implementation* of a function
 depending on what features are supported. In this case, our function
@@ -153,7 +153,7 @@ depending on what features are supported. In this case, our function
 
 Unfortunately, IFUNC can be used for other purposes, as Sam James
 explains in [FAQ on the xz-utils backdoor (CVE-2024-3094)][thesamesam].
-You can see an example of this in [`tty_demo.c`](src/tty_demo.c).  This
+You can see an example of this in [`tty_demo.c`](code/tty_demo.c).  This
 is a toy program that prints "Hello World!" when its stdout is a file,
 but prints that message using green text if its output is a terminal. It
 uses IFUNC to load the appropriate implementation when the program
@@ -245,6 +245,7 @@ Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RU
 
 ## IFUNC is Probably a Bad Idea
 ![](memes/ifunc_change_my_mind.png)
+
 GNU IFUNC is difficult to implement, hard to use correctly, and (as an
 alleged performance tool) isn't much faster than alternatives. As we've
 seen with CVE-2024-3094, it is also a very powerful tool for software
@@ -284,8 +285,8 @@ invocation is worth acknowledging.
 
 To figure this out, I designed an experiment that would call a *dynamically
 resolved* function over and over again in a tight loop.  Take a look at
-[`speed_demo_ifunc.c`](src/speed_demo_ifunc.c) and
-[`speed_demo_pointer.c`](src/speed_demo_pointer.c).  These programs both do the
+[`speed_demo_ifunc.c`](code/speed_demo_ifunc.c) and
+[`speed_demo_pointer.c`](code/speed_demo_pointer.c).  These programs both do the
 same work (incrementing a static counter), but the incrementer functions are
 resolved in different ways: the former leverages GNU IFUNC, and the latter
 relies on plain old function pointers.
@@ -297,7 +298,7 @@ Here is the overall logic:
 1. Call this incrementer function a few billion times to get an estimate of its
    cost.
 
-As a control, there is also [`speed_demo_fixed.c`](src/speed_demo_fixed.c) which
+As a control, there is also [`speed_demo_fixed.c`](code/speed_demo_fixed.c) which
 does the same incrementer work but without any dynamically resolve functions.
 This can be used to get a help estimate what part of the runtime is dedicated to
 function invocation vs what part is just doing addition.
@@ -326,8 +327,8 @@ performance.
 #### Performance of Other Techniques
 There are other techniques which are slower than ifunc. Take a look at the
 `super_rigorous_speed_demo`, which brings to other experiments into play:
-[`speed_demo_upfront.c`](src/speed_demo_upfront.c) and
-[`speed_demo_always.c`](src/speed_demo_always.c).
+[`speed_demo_upfront.c`](code/speed_demo_upfront.c) and
+[`speed_demo_always.c`](code/speed_demo_always.c).
 
 `speed_demo_upfront.c` behaves similarly to `speed_demo_pointer.c`, except that
 it stores the results of the cpu feature checks in global variables rather than
