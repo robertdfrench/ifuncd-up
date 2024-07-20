@@ -209,7 +209,7 @@ There are three things at play here:
 * GOT
 * RELRO
 
-![](boromir_plt.png)
+![](memes/boromir_plt.png)
 
 The PLT and the GOT enable lazy binding. That is what they are *for*. Check out
 jasoncc's [GNU Indirect Function and x86 ELF ABIs][jasoncc] for more on this.
