@@ -19,11 +19,11 @@ SystemD][biebl], and the existence of [GNU IFUNC][sourceware].
 
 
 ## Quick Recap of CVE-2024-3094
-There are tons of good writeups outlining the high level details of the xz-utils
-backdoor, like Dan Goodin's [What we know about the xz Utils backdoor that
-almost infected the world][goodin1] and Thomas Roccia's [XZ Outbreak][fr0gger]
-diagram. We don't need to rehash all that here, so the purposes of this article,
-here is a **very coarse** recap:
+There are tons of good writeups outlining the high level details of the
+xz-utils backdoor, like Dan Goodin's [What we know about the xz Utils
+backdoor that almost infected the world][goodin1] and Thomas Roccia's
+[XZ Outbreak][fr0gger] diagram. We don't need to rehash all that here,
+so the purposes of this article, here is a **very coarse** recap:
 
 * Some Linux distros modify OpenSSH to depend on SystemD
 * SystemD depends on xz-utils, which uses GNU IFUNC
@@ -90,10 +90,11 @@ flowchart TD
 ```
 
 OpenBSD's version of OpenSSH is upstream from everything else, and most
-improvements to it come from within the OpenBSD community. These changes flow
-downstream to the OpenSSH Portable project, which attempts to re-implement new
-features in ways that aren't specific to OpenBSD. This is what allows SSH to
-work on platforms like Linux, macOS, FreeBSD, and even Windows. 
+improvements to it come from within the OpenBSD community. These changes
+flow downstream to the OpenSSH Portable project, which attempts to
+re-implement new features in ways that aren't specific to OpenBSD. This
+is what allows SSH to work on platforms like Linux, macOS, FreeBSD, and
+even Windows. 
 
 But it doesn't stop there. Some operating systems apply further
 customization beyond what OpenSSH Portable provides. For example, Apple
@@ -125,20 +126,23 @@ OpenBSD doesn't have any need to support SystemD.
 
 
 ### Concerns about "Separation of Concerns"
-This seems harmless enough, but it's an example of a much large problem in Open
-Source, particularly in Linux: critical components of the operating system are
-developed by people who don't know each other, and don't talk to each other. 
+This seems harmless enough, but it's an example of a much large problem
+in Open Source, particularly in Linux: critical components of the
+operating system are developed by people who don't know each other, and
+don't talk to each other. 
 
 * Did the folks who patched OpenSSH for SystemD know (or care) that
   libsystemd depends on xz-utils?
-* Did the SystemD folks know (or care) that xz-utils had begun using ifunc?
+* Did the SystemD folks know (or care) that xz-utils had begun using
+  ifunc?
 * Did the OpenSSH folks know (or care) that ifunc was a thing? It's
   certainly not a thing on OpenBSD.
 
-In some sense, this breakdown in communication is a feature of open source: I
-can adapt your work to my needs without having to bother you about it. But it
-can also lead to a degree of indirection that prevents critical design
-assumptions (such as a traditional dynamic linking process) from being upheld.
+In some sense, this breakdown in communication is a feature of open
+source: I can adapt your work to my needs without having to bother you
+about it. But it can also lead to a degree of indirection that prevents
+critical design assumptions (such as a traditional dynamic linking
+process) from being upheld.
 
 The obvious corollary to [Conway's Law][conway] is that if you are
 shipping your org chart, you're also shipping the bugs that live in the
@@ -156,11 +160,12 @@ you'd like to use. It does this by giving you to an opportunity to run
 
 ![](memes/ifunc_hard_right.png)
 
-Suppose you have an application that must run on a wide variety of x86 CPUs.
-Depending on the specific features of the current CPU, you may prefer to use
-different algorithms for the same task. The idea behind IFUNC was to allow
-programs to check for CPU features the first time a function is called, and
-thereafter use an implementation that will be most appropriate for that CPU.
+Suppose you have an application that must run on a wide variety of x86
+CPUs.  Depending on the specific features of the current CPU, you may
+prefer to use different algorithms for the same task. The idea behind
+IFUNC was to allow programs to check for CPU features the first time a
+function is called, and thereafter use an implementation that will be
+most appropriate for that CPU.
 
 Take a look at [`cpu_demo.c`](code/cpu_demo.c). This file shows the most
 common use of IFUNC: it asks the CPU whether or not it supports certain
@@ -198,18 +203,19 @@ user 5.91
 sys 0.00
 ```
 
-I'll give a more [rigorous analysis](#performance-overhead) later in this
-document, but for now just understand that using GNU IFUNC incurs a little extra
-overhead, even though it exists for the sake of performance optimizations.
+I'll give a more [rigorous analysis](#performance-overhead) later in
+this document, but for now just understand that using GNU IFUNC incurs a
+little extra overhead, even though it exists for the sake of performance
+optimizations.
 
 
 
 ### Can't I accomplish the same thing with `LD_PRELOAD`?
-Sortof! GNU IFUNC allows developers to make runtime decisions about which
-version of a function is best to use. If you know what decisions need to be
-made (and you have a separate copy of your dynamic library for each case) then
-you could accomplish the same thing by specifying the right library with
-`$LD_PRELOAD` like so:
+Sortof! GNU IFUNC allows developers to make runtime decisions about
+which version of a function is best to use. If you know what decisions
+need to be made (and you have a separate copy of your dynamic library
+for each case) then you could accomplish the same thing by specifying
+the right library with `$LD_PRELOAD` like so:
 
 ```bash
 #!/bin/bash
@@ -225,7 +231,16 @@ fi
 
 
 
-### How does GNU IFUNC work?
+## How does IFUNC work?
+IFUNC allows you to write functions that act sortof like plugins for the
+dynamic loader [`ld.so`][kerrisk]. When your program is being loaded
+into memory, every dynamic symbol (function or variable) needs to be
+resolved to some *real* function in a dynamic library. 
+
+In the simplest case, the 
+
+### A Primer on Dynamic Loading
+
 There are three things at play here:
 * PLT
 * GOT
@@ -233,30 +248,31 @@ There are three things at play here:
 
 ![](memes/boromir_plt.png)
 
-The PLT and the GOT enable lazy binding. That is what they are *for*. Check out
-jasoncc's [GNU Indirect Function and x86 ELF ABIs][jasoncc] for more on this.
+The PLT and the GOT enable lazy binding. That is what they are *for*.
+Check out jasoncc's [GNU Indirect Function and x86 ELF ABIs][jasoncc]
+for more on this.
 
-To prevent code pages from needing to be modified at runtime, the PLT jumps to
-addresses listed in the GOT, which resides in a data page. 
+To prevent code pages from needing to be modified at runtime, the PLT
+jumps to addresses listed in the GOT, which resides in a data page. 
 
 [Partial RELRO][sidhpurwala] means that the GOT is marked read-only
 after symbols are resolved, before `main` begins. It effectively
 disables lazy binding, forcing all function resolution to occur at
 program startup.
 
-A lot of discussion of IFUNC will say things like "This updates the PLT". That
-isn't true. The PLT is read-only. What is updated is the GOT, and the PLT merely
-references entries in the GOT.
+A lot of discussion of IFUNC will say things like "This updates the
+PLT". That isn't true. The PLT is read-only. What is updated is the GOT,
+and the PLT merely references entries in the GOT.
 
-Another common bit of misinformation is that people will say IFUNC resolvers run
-when the function is first invoked. This *could* be the case, but because
-Partial RELRO is the default these days, it usually isn't. If the executable
-specifies that it wants Partial RELRO, then all of its indirect functions are
-resolved before `main`.
+Another common bit of misinformation is that people will say IFUNC
+resolvers run when the function is first invoked. This *could* be the
+case, but because Partial RELRO is the default these days, it usually
+isn't. If the executable specifies that it wants Partial RELRO, then all
+of its indirect functions are resolved before `main`.
 
 You can check what (if any) degree of RELRO is enabled by running
-[checksec(1)][checksec]. For example, we can inspect the `plt_example.exe`
-binary like so:
+[checksec(1)][checksec]. For example, we can inspect the
+`plt_example.exe` binary like so:
 
 ```console
 $ make plt_example.exe
@@ -288,16 +304,18 @@ applications.
 
 
 ### It's too Confusing to Use Safely
-ifunc is entirely too difficult to use. There are too many [corner cases][nagy], and the
-[official documentation][gnu-cfa] is [scant][sourceware]. This gives users the
-misleading idea that adopting ifunc is straightforward.
+ifunc is entirely too difficult to use. There are too many [corner
+cases][nagy], and the [official documentation][gnu-cfa] is
+[scant][sourceware]. This gives users the misleading idea that adopting
+ifunc is straightforward.
 
-Even several years after ifunc became available, the advertised interface [did
-not work][agner]. GCC developers have called it [a mistake][odonell] and have
-considered adding warnings to compensate for IFUNC's fragility:
+Even several years after ifunc became available, the advertised
+interface [did not work][agner]. GCC developers have called it [a
+mistake][odonell] and have considered adding warnings to compensate for
+IFUNC's fragility:
 
-> The glibc solutions required to make IFUNC robust are not in place, and so we
-> should do what we can to warn users that it might break.
+> The glibc solutions required to make IFUNC robust are not in place,
+> and so we should do what we can to warn users that it might break.
 
 It isn't just IFUNC either. Apple Mach-O has a similar feature called
 `.symbol_resolver` which they ["regret adding"][rjmccall].
@@ -305,35 +323,37 @@ It isn't just IFUNC either. Apple Mach-O has a similar feature called
 
 
 ### It isn't Much Faster than Alternatives
-Given that the usual justification for ifunc is performance-related, I wanted to
-see how much overhead *ifunc itself* causes. After all, any function worth
-optimizing is probably called frequently, so the overhead of the function
-invocation is worth acknowledging.
+Given that the usual justification for ifunc is performance-related, I
+wanted to see how much overhead *ifunc itself* causes. After all, any
+function worth optimizing is probably called frequently, so the overhead
+of the function invocation is worth acknowledging.
 
-To figure this out, I designed an experiment that would call a *dynamically
-resolved* function over and over again in a tight loop.  Take a look at
-[`speed_demo_ifunc.c`](code/speed_demo_ifunc.c) and
-[`speed_demo_pointer.c`](code/speed_demo_pointer.c).  These programs both do the
-same work (incrementing a static counter), but the incrementer functions are
-resolved in different ways: the former leverages GNU IFUNC, and the latter
-relies on plain old function pointers.
+To figure this out, I designed an experiment that would call a
+*dynamically resolved* function over and over again in a tight loop.
+Take a look at [`speed_demo_ifunc.c`](code/speed_demo_ifunc.c) and
+[`speed_demo_pointer.c`](code/speed_demo_pointer.c).  These programs
+both do the same work (incrementing a static counter), but the
+incrementer functions are resolved in different ways: the former
+leverages GNU IFUNC, and the latter relies on plain old function
+pointers.
 
 Here is the overall logic:
 
 1. Call a resolver function to determine which incrementer to use.
 1. Record this answer somewhere (in the GOT, or as a function pointer).
-1. Call this incrementer function a few billion times to get an estimate of its
-   cost.
+1. Call this incrementer function a few billion times to get an estimate
+   of its cost.
 
-As a control, there is also [`speed_demo_fixed.c`](code/speed_demo_fixed.c) which
-does the same incrementer work but without any dynamically resolve functions.
-This can be used to get a help estimate what part of the runtime is dedicated to
-function invocation vs what part is just doing addition.
+As a control, there is also
+[`speed_demo_fixed.c`](code/speed_demo_fixed.c) which does the same
+incrementer work but without any dynamically resolve functions.  This
+can be used to get a help estimate what part of the runtime is dedicated
+to function invocation vs what part is just doing addition.
 
-The Makefile target `rigorous_speed_demo` makes several runs of each of these
-programs and produces some simple statistics about their performance. These
-numbers will of course change based on your hardware, but the `fixed` test
-should serve as a baseline for comparison.
+The Makefile target `rigorous_speed_demo` makes several runs of each of
+these programs and produces some simple statistics about their
+performance. These numbers will of course change based on your hardware,
+but the `fixed` test should serve as a baseline for comparison.
 
 | *Results* | LOW  | HIGH | AVG   |
 |-----------|------|------|-------|
@@ -341,15 +361,15 @@ should serve as a baseline for comparison.
 | ifunc     | 9.50 | 10.56| 9.986 |
 | pointer   | 6.23 | 7.44 | 6.791 |
 
-What we see here is that ifunc has a not-insignificant overhead compared to
-using a plain-old function pointer. On average, on my hardware, it takes about
-twice as long to call an ifunc function 2 billion times as it does to invoke a
-function pointer 2 billion times.
+What we see here is that ifunc has a not-insignificant overhead compared
+to using a plain-old function pointer. On average, on my hardware, it
+takes about twice as long to call an ifunc function 2 billion times as
+it does to invoke a function pointer 2 billion times.
 
 Does this matter in real life? Absolutely not. Functions that are worth
-optimizing are much more expensive than the "increment by one" functions that we
-are analyzing here. It is interesting because GNU IFUNC claims to be a boon for
-performance.
+optimizing are much more expensive than the "increment by one" functions
+that we are analyzing here. It is interesting because GNU IFUNC claims
+to be a boon for performance.
 
 
 #### Performance of Other Techniques
@@ -358,21 +378,22 @@ There are other techniques which are slower than ifunc. Take a look at the
 [`speed_demo_upfront.c`](code/speed_demo_upfront.c) and
 [`speed_demo_always.c`](code/speed_demo_always.c).
 
-`speed_demo_upfront.c` behaves similarly to `speed_demo_pointer.c`, except that
-it stores the results of the cpu feature checks in global variables rather than
-keeping track of a function pointer. This still requires a "resolver" function
-to run first to determine which implementation gets used, based on the value of
-these global variables. This technique turns out to be slower than ifunc, but it
-is also safer than storing function pointers: whereas function pointers can be
-set to arbitrary values, boolean flags cannot. So an attacker able to modify
-these variables can make the program *slower*, but cannot make the program behave
-*differently*.
+`speed_demo_upfront.c` behaves similarly to `speed_demo_pointer.c`,
+except that it stores the results of the cpu feature checks in global
+variables rather than keeping track of a function pointer. This still
+requires a "resolver" function to run first to determine which
+implementation gets used, based on the value of these global variables.
+This technique turns out to be slower than ifunc, but it is also safer
+than storing function pointers: whereas function pointers can be set to
+arbitrary values, boolean flags cannot. So an attacker able to modify
+these variables can make the program *slower*, but cannot make the
+program behave *differently*.
 
-`speed_demo_always.c` is designed to be the slowest technique -- it checks all
-the necessary CPU features every time an implementation is needed and picks one
-on the fly. Curiously, this technique is not significantly slower than anything
-else. It is only marginally slower than ifunc in the case where we have just a
-single CPU feature to check. 
+`speed_demo_always.c` is designed to be the slowest technique -- it
+checks all the necessary CPU features every time an implementation is
+needed and picks one on the fly. Curiously, this technique is not
+significantly slower than anything else. It is only marginally slower
+than ifunc in the case where we have just a single CPU feature to check. 
 
 | TEST    | LOW  | HIGH  | AVG     |
 |---------|------|-------|---------|
@@ -401,6 +422,7 @@ single CPU feature to check.
 [jasoncc]: https://jasoncc.github.io/gnu_gcc_glibc/gnu-ifunc.html#relocations-and-pic
 [JiaT75]: https://github.com/tukaani-project/xz/commit/cf44e4b7f5dfdbf8c78aef377c10f71e274f63c0
 [keith]: https://keith.github.io/xcode-man-pages/ssh-add.1.html#apple-use-keychain
+[kerrisk]: https://www.man7.org/linux/man-pages/man8/ld.so.8.html
 [mindrot]: https://anongit.mindrot.org/openssh.git
 [nagy]: https://sourceware.org/legacy-ml/libc-alpha/2015-11/msg00108.html
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
