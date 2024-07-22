@@ -255,7 +255,7 @@ necessarily knowing where all of their symbols are ahead of time.
 
 
 #### Partial RELRO
-![](memes/boromor_got.png)
+![](memes/boromir_got.png)
 
 Updating the GOT at runtime means that the memory page containing the
 GOT must always be writable. This isn't ideal from a security
@@ -405,47 +405,6 @@ fi
 
 (If you are unfamiliar with `LD_PRELOAD`, check out catonmat's ["A Simple
 `LD_PRELOAD` Tutorial"][catonmat].)
-
-
-
-## How does IFUNC work?
-IFUNC allows you to write functions that act sortof like plugins for the
-dynamic loader [`ld.so`][kerrisk]. When your program is being loaded
-into memory, every dynamic symbol (function or variable) needs to be
-resolved to some *real* function in a dynamic library. 
-
-In the simplest case, the 
-
-### A Primer on Dynamic Loading
-
-There are three things at play here:
-* PLT
-* GOT
-* RELRO
-
-![](memes/boromir_plt.png)
-
-The PLT and the GOT enable lazy binding. That is what they are *for*.
-Check out jasoncc's [GNU Indirect Function and x86 ELF ABIs][jasoncc]
-for more on this.
-
-To prevent code pages from needing to be modified at runtime, the PLT
-jumps to addresses listed in the GOT, which resides in a data page. 
-
-[Partial RELRO][sidhpurwala] means that the GOT is marked read-only
-after symbols are resolved, before `main` begins. It effectively
-disables lazy binding, forcing all function resolution to occur at
-program startup.
-
-A lot of discussion of IFUNC will say things like "This updates the
-PLT". That isn't true. The PLT is read-only. What is updated is the GOT,
-and the PLT merely references entries in the GOT.
-
-Another common bit of misinformation is that people will say IFUNC
-resolvers run when the function is first invoked. This *could* be the
-case, but because Partial RELRO is the default these days, it usually
-isn't. If the executable specifies that it wants Partial RELRO, then all
-of its indirect functions are resolved before `main`.
 
 
 
