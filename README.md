@@ -185,10 +185,10 @@ When gcc sees an extern declaration like this:
 extern char **environ;
 ```
 
-it prepares an entry for it in the binary's *global offset table*. When
-your program is loaded into memory, it is the responsibility of the
+it prepares an entry for it in the binary's Global Offset Table (GOT).
+When your program is loaded into memory, it is the responsibility of the
 dynamic linker (`ld.so`) to find the address of the `environ` variable
-and write it into the Global Offset Table (GOT).
+and write it into the GOT.
 
 This means that a program does not need to know the exact address of
 extern variables; it simply needs to know where their address *will* be
@@ -224,8 +224,28 @@ If you look near the bottom, you can see that there is an entry called
 `__environ@GLIBC_2.2.5`. When the program is loaded into memory, `ld.so`
 will try to find this variable in [The GNU C Library][glibc] and place
 its address into the GOT. Every part of the program that needs to access
-`environ` will do so by using its *offset*: in this case
-0000000000004020.
+`environ` will do so by using its *offset*. In this case, 0x4020.
+
+Here's what the whole ball of wax looks like if we try to draw it out:
+
+```mermaid
+flowchart TD
+  subgraph glibc
+    E[environ]
+  end
+
+  subgraph Program
+    subgraph GOT
+      EP["__environ@GLIBC_2.2.5"]
+    end
+
+    Code["environ"]
+  end
+
+Code-->|0x4020|EP
+Linker-->|find address|E
+Linker-->|store address|EP
+```
 
 This indirection is part of what allows programs to work without
 necessarily knowing where all of their symbols are ahead of time.
