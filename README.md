@@ -126,7 +126,7 @@ OpenBSD doesn't have any need to support SystemD.
 
 
 ### Concerns about "Separation of Concerns"
-This seems harmless enough, but it's an example of a much large problem
+This seems harmless enough, but it's an example of a much larger problem
 in Open Source, particularly in Linux: critical components of the
 operating system are developed by people who don't know each other, and
 don't talk to each other. 
