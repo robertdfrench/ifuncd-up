@@ -304,6 +304,8 @@ Linkage Table (PLT).
 
 
 #### Full RELRO
+![](memes/boromir_plt.png)
+
 Part of the original purpose of the PLT was to enable *lazy-binding*:
 delaying the lookup of dynamic symbols until the first time they're
 needed. However, this means that the GOT needs to remain writable until
