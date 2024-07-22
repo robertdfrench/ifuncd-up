@@ -153,6 +153,109 @@ right hand of xz-utils was doing.
 
 
 
+
+## Understanding Dynamic Linking on Linux
+At its core, CVE-2024-3094 was an attack on dynamic linking. The same
+thing could happen to any networked application which depends on
+3rd-party dynamic libraries. To understand this attack, you need to know
+a bit about how dynamic linking typically works on Linux.
+
+Linking is not just something that happens at compile time. When your
+program is executed, functions and variables can be imported from
+*dynamic libraries*. This happens before your program's `main` function
+is called, and is handled automatically for you by a tool called
+[`ld.so(8)`][kerrisk].
+
+There are several different layers to this, we'll dive in one at a time.
+
+
+
+### Global Offset Table
+Before we look at how functions are loaded, let's take a look at how
+variables are loaded from shared libraries.
+
+The [`environ.c`](code/environ.c) file shows an example of an *extern*
+variable in C. This is a variable whose value we expect to be provided
+by a shared library at runtime; it is not the responsibility of our
+program to create or initialize it.
+
+When gcc sees an extern declaration like this:
+
+```c
+extern char **environ;
+```
+
+it prepares an entry for it in the binary's *global offset table*. When
+your program is loaded into memory, it is the responsibility of the
+dynamic linker (`ld.so`) to find the address of the `environ` variable
+and write it into the Global Offset Table (GOT).
+
+This means that a program does not need to know the exact address of
+extern variables; it simply needs to know where their address *will* be
+located once the linker finds it. Each extern variable gets its own
+entry in the GOT where the dynamic linker can store this address once
+the correct symbol has been found.
+
+If you run `make environ.got` you can see the entries that the compiler
+has created for the `environ.c` program:
+
+```console
+$ make environ.got
+gcc -o environ.exe code/environ.c
+objdump -R environ.exe
+
+environ.exe:     file format elf64-x86-64
+
+DYNAMIC RELOCATION RECORDS
+OFFSET           TYPE              VALUE
+0000000000003dd0 R_X86_64_RELATIVE  *ABS*+0x0000000000001130
+0000000000003dd8 R_X86_64_RELATIVE  *ABS*+0x00000000000010f0
+0000000000004010 R_X86_64_RELATIVE  *ABS*+0x0000000000004010
+0000000000003fc0 R_X86_64_GLOB_DAT  __libc_start_main@GLIBC_2.34
+0000000000003fc8 R_X86_64_GLOB_DAT  _ITM_deregisterTMCloneTable@Base
+0000000000003fd0 R_X86_64_GLOB_DAT  __gmon_start__@Base
+0000000000003fd8 R_X86_64_GLOB_DAT  _ITM_registerTMCloneTable@Base
+0000000000003fe0 R_X86_64_GLOB_DAT  __cxa_finalize@GLIBC_2.2.5
+0000000000004020 R_X86_64_COPY     __environ@GLIBC_2.2.5
+0000000000004000 R_X86_64_JUMP_SLOT  printf@GLIBC_2.2.5
+```
+
+If you look near the bottom, you can see that there is an entry called
+`__environ@GLIBC_2.2.5`. When the program is loaded into memory, `ld.so`
+will try to find this variable in [The GNU C Library][glibc] and place
+its address into the GOT. Every part of the program that needs to access
+`environ` will do so by using its *offset*: in this case
+0000000000004020.
+
+This indirection is part of what allows programs to work without
+necessarily knowing where all of their symbols are ahead of time.
+
+### Procedure Linkage Table
+As an example, take a look at [`hello_world.c`](code/hello_world.c).
+This is a simple "Hello World"-style program that calls `printf(3)` to
+print the name of the running program. Because printf itself is not
+defined in your program, you'll need to import a suitable definition
+from a dynamic library.
+
+If you run `make hello_world.dylibs`, you can see the list of dynamic
+libraries that your program will need to have in order to start up
+correctly:
+
+```console
+$ make hello_world.dylibs
+gcc -o hello_world.exe code/hello_world.c
+objdump -p hello_world.exe | grep NEEDED
+  NEEDED               libc.so.6
+```
+
+This tells us that our program wants to import a dynamic library called
+"libc". For most Linux distros, this is [The GNU C Library][glibc].
+
+For every dynamic function that your program needs to import, the
+compiler will create a "stub" function in something called the
+
+
+
 ## What is GNU IFUNC *supposed* do?
 It allows you to determine, at runtime, which version of some function
 you'd like to use. It does this by giving you to an opportunity to run
@@ -417,6 +520,7 @@ than ifunc in the case where we have just a single CPU feature to check.
 [djmdjm]: https://github.com/openssh/openssh-portable/pull/251#issuecomment-2027935208
 [fr0gger]: https://infosec.exchange/@fr0gger/112189232773640259
 [freund]: https://www.openwall.com/lists/oss-security/2024/03/29/4
+[glibc]: https://www.gnu.org/software/libc/
 [gnu-cfa]: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-ifunc-function-attribute
 [goodin1]: https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
 [jasoncc]: https://jasoncc.github.io/gnu_gcc_glibc/gnu-ifunc.html#relocations-and-pic
@@ -424,6 +528,7 @@ than ifunc in the case where we have just a single CPU feature to check.
 [keith]: https://keith.github.io/xcode-man-pages/ssh-add.1.html#apple-use-keychain
 [kerrisk]: https://www.man7.org/linux/man-pages/man8/ld.so.8.html
 [mindrot]: https://anongit.mindrot.org/openssh.git
+[musl]: https://musl.libc.org
 [nagy]: https://sourceware.org/legacy-ml/libc-alpha/2015-11/msg00108.html
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
 [odonell]: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70082#c0

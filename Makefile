@@ -17,12 +17,26 @@ cpu_demo: cpu_demo.exe #: Detect CPU features
 	$(call banner, $@)
 	./$<
 
-ifunc_late: ifunc_late.exe
+ifunc_late: ifunc_late.exe #: 
 	./$<
 
-speed_demo: speed_demo_ifunc.time speed_demo_pointer.time speed_demo_fixed.time speed_demo_always.time speed_demo_upfront.time #: Is IFUNC slow?
+%.dylibs: %.exe
+	objdump -p $< | grep NEEDED
 
-rigorous_speed_demo: clean speed_demo_fixed.stats.txt speed_demo_ifunc.stats.txt speed_demo_pointer.stats.txt #: Really, how slow is it?
+%.got: %.exe
+	objdump -R $<
+
+SPEED_DEMO_TIMES=speed_demo_ifunc.time \
+		speed_demo_pointer.time \
+		speed_demo_fixed.time \
+		speed_demo_always.time \
+		speed_demo_upfront.time
+speed_demo: $(SPEED_DEMO_TIMES) #: Is IFUNC slow?
+
+RIGOROUS_SPEED_STATS=speed_demo_fixed.stats.txt \
+		speed_demo_ifunc.stats.txt \
+		speed_demo_pointer.stats.txt
+rigorous_speed_demo: clean $(RIGOROUS_SPEED_STATS) #: Really, how slow is it?
 	$(call banner, Final Results)
 	@echo "TEST	LOW	HIGH	AVG"
 	@printf "fixed\t"; cat speed_demo_fixed.stats.txt
@@ -30,7 +44,12 @@ rigorous_speed_demo: clean speed_demo_fixed.stats.txt speed_demo_ifunc.stats.txt
 	@printf "ifunc\t"; cat speed_demo_ifunc.stats.txt
 	@echo ""
 
-super_rigorous_speed_demo: clean speed_demo_fixed.stats.txt speed_demo_ifunc.stats.txt speed_demo_pointer.stats.txt speed_demo_always.stats.txt speed_demo_upfront.stats.txt #: Really, how slow is it?
+RIDICULOUS_STATS=speed_demo_fixed.stats.txt \
+		speed_demo_ifunc.stats.txt \
+		speed_demo_pointer.stats.txt \
+		speed_demo_always.stats.txt \
+		speed_demo_upfront.stats.txt
+ridiculous_speed_demo: clean $(RIDICULOUS_STATS) #: Compare other techniques
 	$(call banner, Final Results)
 	@echo "TEST	LOW	HIGH	AVG"
 	@printf "fixed\t"; cat speed_demo_fixed.stats.txt
@@ -70,23 +89,14 @@ tty_demo: tty_demo.exe #: Print color for tty, plaintext for file
 plt_example.exe: code/plt_example.c
 	gcc -fPIC -no-pie -o $@ $<
 
-modify_got: modify_got.exe modify_got_library.so #: Show that IFUNC allows the GOT to be modified
-	LD_LIBRARY_PATH=. ./$<
-
-modify_got.exe: code/modify_got.c
-	gcc -o $@ $< -ldl
-
-modify_got_library.so: code/modify_got_library.c
-	gcc -shared -fPIC -Wl,-z,norelro -o $@ $<
-
 %.exe: code/%.c
 	gcc -o $@ $<
 
-plt_example: plt_example.exe #: Get the hang of the Procedure Linkage Table
+%.plt: %.exe
 	objdump -d -r $< \
 		| awk '/section/ { plt=0 }; /section .plt/ { plt=1 }; { if (plt) { print } }'
 
-relro_example: plt_example.exe #: Show our RELRO status
+%.relro: %.exe
 	checksec --file=./$<
 
 docker_build.txt: Dockerfile
