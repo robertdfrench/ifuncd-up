@@ -11,7 +11,7 @@ RUN apt-get install -y checksec
 
 # Install and configure vim
 RUN apt-get install -y vim
-RUN printf "set textwidth=80\nsyn on\n" > /root/.vimrc
+RUN printf "set textwidth=72\nsyn on\n" > /root/.vimrc
 
 # Set the working directory in the container
 WORKDIR /workspace
