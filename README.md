@@ -254,6 +254,28 @@ This indirection is part of what allows programs to work without
 necessarily knowing where all of their symbols are ahead of time.
 
 
+#### Partial RELRO
+![](memes/boromor_got.png)
+
+Updating the GOT at runtime means that the memory page containing the
+GOT must always be writable. This isn't ideal from a security
+perspective.  An attacker who can inject a malicious payload into the
+program may be able to overwrite values in the GOT, giving them some
+control over how the program behaves. To prevent this, GCC introduced an
+option called [Relocation Read-only][sidhpurwala] or "RELRO".
+
+RELRO comes in two flavors: Full and Partial. Partial RELRO tells the
+dynamic linker to do the following:
+
+* Resolve GOT entries for all `extern` variables
+* Mark these entries read-only by calling [`mprotect(2)`][mprotect]
+* Call the program's `main` function
+
+Partial RELRO helps protect the integrity of the GOT by marking is
+read-only as soon as all legitimate modifications are done. We'll talk
+about [Full RELRO](#full-relro) in the next section.
+
+
 
 ### Procedure Linkage Table
 As an example, take a look at [`hello_world.c`](code/hello_world.c).
@@ -281,7 +303,7 @@ compiler will create a "stub" function in the Procedure
 Linkage Table (PLT). 
 
 
-#### Lazy-Binding and RELRO
+#### Full RELRO
 Part of the original purpose of the PLT was to enable *lazy-binding*:
 delaying the lookup of dynamic symbols until the first time they're
 needed. However, this means that the GOT needs to remain writable until
@@ -289,17 +311,22 @@ all symbols have been resolved. If a program does not take all code
 paths that use dynamic symbols, its GOT will remain writable the entire
 time it is running.
 
-An attacker who can inject a malicious payload into the program may be
-able to overwrite values in the GOT, giving them some control over how
-the program behaves. To prevent this, GCC introduced an option called
-[Relocation Read-only][sidhpurwala] or "RELRO".
-
-RELRO tells the dynamic linker to resolve all symbols before a program
-begins executing, and then mark the GOT read-only by calling
+Full RELRO tells the dynamic linker to resolve all symbols before a
+program begins executing, and then mark the GOT read-only by calling
 [`mprotect(2)`][mprotect]. This prevents the GOT from being modified by
 an attacker, but it also makes program startup slower because every
 dynamic symbol must be resolved before the `main` function can begin.
 
+You can check what (if any) degree of RELRO is enabled by running
+[checksec(1)][checksec]. For example, we can inspect the
+`plt_example.exe` binary like so:
+
+```console
+$ make plt_example.exe
+$ checksec --file=./plt_example.exe
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      Symbols         FORTIFY Fortified       Fortifiable     FILE
+Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   36 Symbols        No    0               0               ./plt_example.exe
+```
 
 
 
@@ -419,17 +446,6 @@ resolvers run when the function is first invoked. This *could* be the
 case, but because Partial RELRO is the default these days, it usually
 isn't. If the executable specifies that it wants Partial RELRO, then all
 of its indirect functions are resolved before `main`.
-
-You can check what (if any) degree of RELRO is enabled by running
-[checksec(1)][checksec]. For example, we can inspect the
-`plt_example.exe` binary like so:
-
-```console
-$ make plt_example.exe
-$ checksec --file=./plt_example.exe
-RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      Symbols         FORTIFY Fortified       Fortifiable     FILE
-Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   36 Symbols        No    0               0               ./plt_example.exe
-```
 
 
 

@@ -1,6 +1,6 @@
 # Dank Meme Stash
 
-![](boromir_plt.png)
+![](boromir_got.png)
 
 ![](linker_social_engineering.png)
 
