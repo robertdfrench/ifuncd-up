@@ -164,9 +164,12 @@ Linking is not just something that happens at compile time. When your
 program is executed, functions and variables can be imported from
 *dynamic libraries*. This happens before your program's `main` function
 is called, and is handled automatically for you by a tool called
-[`ld.so(8)`][kerrisk].
+[`ld.so(8)`][kerrisk]. This process is called *dynamic linking*.
 
-There are several different layers to this, we'll dive in one at a time.
+To understand how dynamic linking works, and the role it played in
+CVE-2024-3094, we'll need to talk two parts of a binary that make it
+work: the [Global Offset Table](#global-offset-table) and the [Procedure
+Linkage Table](#procedure-linkage-table).
 
 
 
@@ -250,6 +253,8 @@ Linker-->|store address|EP
 This indirection is part of what allows programs to work without
 necessarily knowing where all of their symbols are ahead of time.
 
+
+
 ### Procedure Linkage Table
 As an example, take a look at [`hello_world.c`](code/hello_world.c).
 This is a simple "Hello World"-style program that calls `printf(3)` to
@@ -272,7 +277,29 @@ This tells us that our program wants to import a dynamic library called
 "libc". For most Linux distros, this is [The GNU C Library][glibc].
 
 For every dynamic function that your program needs to import, the
-compiler will create a "stub" function in something called the
+compiler will create a "stub" function in the Procedure
+Linkage Table (PLT). 
+
+
+#### Lazy-Binding and RELRO
+Part of the original purpose of the PLT was to enable *lazy-binding*:
+delaying the lookup of dynamic symbols until the first time they're
+needed. However, this means that the GOT needs to remain writable until
+all symbols have been resolved. If a program does not take all code
+paths that use dynamic symbols, its GOT will remain writable the entire
+time it is running.
+
+An attacker who can inject a malicious payload into the program may be
+able to overwrite values in the GOT, giving them some control over how
+the program behaves. To prevent this, GCC introduced an option called
+[Relocation Read-only][sidhpurwala] or "RELRO".
+
+RELRO tells the dynamic linker to resolve all symbols before a program
+begins executing, and then mark the GOT read-only by calling
+[`mprotect(2)`][mprotect]. This prevents the GOT from being modified by
+an attacker, but it also makes program startup slower because every
+dynamic symbol must be resolved before the `main` function can begin.
+
 
 
 
@@ -548,6 +575,7 @@ than ifunc in the case where we have just a single CPU feature to check.
 [keith]: https://keith.github.io/xcode-man-pages/ssh-add.1.html#apple-use-keychain
 [kerrisk]: https://www.man7.org/linux/man-pages/man8/ld.so.8.html
 [mindrot]: https://anongit.mindrot.org/openssh.git
+[mprotect]: https://www.man7.org/linux/man-pages/man2/mprotect.2.html
 [musl]: https://musl.libc.org
 [nagy]: https://sourceware.org/legacy-ml/libc-alpha/2015-11/msg00108.html
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
