@@ -278,6 +278,92 @@ about [Full RELRO](#full-relro) in the next section.
 
 
 ### Procedure Linkage Table
+The Procedure Linking Table (PLT) uses the GOT to help programs to
+invoke dynamic functions. But it is not a table in the same sense;
+rather, the PLT is a set of stub functions, one for each dynamic
+function in your application.
+
+Each of these stub functions, when called, will simply jump to the
+address listed in the corresponding GOT entry. So if your program calls
+`printf`, there will be a GOT entry for the address of `printf` inside
+the C library, and a PLT stub function which calls this address.
+
+The reason for all this indirection is *lazy-binding*: the actual
+address of the dynamic function is not resolved until the first time
+that your program invokes it. This can save time at startup if your
+application has a large amount of dynamic symbols.
+
+Consider this program which calls `printf` three times:
+
+```c
+#include <stdio.h>
+
+int main() {
+	printf("1");
+	printf("2");
+	printf("3");
+	return 0;
+}
+```
+
+Here's how this program and the linker work together (throught the PLT
+and the GOT) to ensure that the address of `printf` only has to be
+resolved once:
+
+```mermaid
+sequenceDiagram
+    participant libc
+    participant main
+    participant ld.so
+    participant printf_plt as plt[printf]
+    participant printf_got as got[printf]
+
+    activate ld.so
+    ld.so->>printf_got: write resolver address
+    ld.so->>main: start program
+    deactivate ld.so
+    activate main
+
+    note over main: printf("1")
+    main->>printf_plt: call printf stub
+    activate printf_plt
+    printf_plt->>printf_got: get resolver address
+    printf_plt->>ld.so: jump to resolver
+    deactivate printf_plt
+    activate ld.so
+    ld.so->>libc: lookup address of printf
+    ld.so->>printf_got: write printf address
+    ld.so->>libc: jump to actual printf in libc
+    deactivate ld.so
+    activate libc
+    libc->>main: return
+    deactivate libc
+
+    note over main: printf("2")
+    main->>printf_plt: call printf stub
+    activate printf_plt
+    printf_plt->>printf_got: get printf address
+    printf_plt->>libc: jump to actual printf in libc
+    deactivate printf_plt
+    activate libc
+    libc->>main: return
+    deactivate libc
+
+    note over main: printf("3")
+    main->>printf_plt: call printf stub
+    activate printf_plt
+    printf_plt->>printf_got: get printf address
+    printf_plt->>libc: jump to actual printf in libc
+    deactivate printf_plt
+    activate libc
+    libc->>main: return
+    deactivate libc
+
+
+    deactivate main
+```
+
+#### Viewing the PLT
 As an example, take a look at [`hello_world.c`](code/hello_world.c).
 This is a simple "Hello World"-style program that calls `printf(3)` to
 print the name of the running program. Because printf itself is not
