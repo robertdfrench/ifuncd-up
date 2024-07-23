@@ -349,16 +349,6 @@ sequenceDiagram
     libc->>main: return
     deactivate libc
 
-    note over main: printf("3")
-    main->>printf_plt: call printf stub
-    activate printf_plt
-    printf_plt->>printf_got: get printf address
-    printf_plt->>libc: jump to actual printf in libc
-    deactivate printf_plt
-    activate libc
-    libc->>main: return
-    deactivate libc
-
 
     deactivate main
 ```
@@ -390,8 +380,6 @@ Linkage Table (PLT).
 
 
 #### Full RELRO
-![](memes/boromir_plt.png)
-
 Part of the original purpose of the PLT was to enable *lazy-binding*:
 delaying the lookup of dynamic symbols until the first time they're
 needed. However, this means that the GOT needs to remain writable until
