@@ -24,6 +24,7 @@ void normal_incrementer() {
 // Select an "appropriate" incrementer based on CPU features. The actual choice
 // doesn't matter in this case, we just need something for the resolver to do.
 static void* resolver(void) {
+	__builtin_cpu_init();
 	if (__builtin_cpu_supports("avx2")) {
 		return fancy_incrementer;
 	} else {

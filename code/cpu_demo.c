@@ -44,6 +44,9 @@ static void* resolve_cpu_info(void) {
         // This is to show that the resolver runs before main.
 	printf("Running the Resolver\n");
 
+	// Initialize the CPU feature checks
+	__builtin_cpu_init();
+
         // Here we check for CPU features to determine which function should be
         // run when the program calls the stub function "print_cpu_info".
 	if (__builtin_cpu_supports("avx2")) {

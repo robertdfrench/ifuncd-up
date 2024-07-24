@@ -27,6 +27,7 @@ void normal_incrementer() {
 // Global Offset Table. When this stub is invoked in the future, the PLT will
 // cause the program to jump directly to the selected function.
 void increment_counter() {
+        __builtin_cpu_init ();
 	if (__builtin_cpu_supports("avx2")) {
 		avx2_incrementer();
 	} else {

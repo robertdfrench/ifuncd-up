@@ -15,7 +15,11 @@ argue that two longstanding design decisions in critical open source
 software are what made this attack possible: [linking OpenSSH against
 SystemD][biebl], and the existence of [GNU IFUNC][sourceware].
 
-
+**Before You Start**: Much of this discussion deals with the intricacies
+of dynamic linking on Linux. If you are not already intimately familiar
+with this, check out [`dynamic_linking.md`](dynamic_linking.md) for a
+quick primer.
+ 
 
 
 ## Quick Recap of CVE-2024-3094
@@ -46,9 +50,6 @@ flowchart TD
     G --> D
 ```
 
-Much of this discussion deals with the intricacies of dynamic linking on
-Linux. If you are not already intimately familiar with this, check out
-[`dynamic_linking.md`](dynamic_linking.md) for a quick primer.
 
 
 ## Why do Linux Distros modify OpenSSH?

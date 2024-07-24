@@ -35,6 +35,7 @@ void increment_counter() {
 }
 
 void detect_cpu_features() {
+	__builtin_cpu_init();
 	cpu_has_avx2 = __builtin_cpu_supports("avx2");
 }
 
