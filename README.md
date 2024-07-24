@@ -279,7 +279,6 @@ Consider this program which calls `printf` three times:
 int main() {
 	printf("1");
 	printf("2");
-	printf("3");
 	return 0;
 }
 ```
@@ -297,38 +296,38 @@ sequenceDiagram
     participant printf_got as got[printf]
 
     activate ld.so
-    ld.so->>printf_got: write resolver address
+    ld.so-->>printf_got: write resolver address
     ld.so->>main: start program
     deactivate ld.so
     activate main
 
     note over main: printf("1")
     main->>printf_plt: call printf stub
+    deactivate main
     activate printf_plt
-    printf_plt->>printf_got: get resolver address
+    printf_plt-->>printf_got: get resolver address
     printf_plt->>ld.so: jump to resolver
     deactivate printf_plt
     activate ld.so
-    ld.so->>libc: lookup address of printf
-    ld.so->>printf_got: write printf address
+    ld.so-->>libc: lookup address of printf
+    ld.so-->>printf_got: write printf address
     ld.so->>libc: jump to actual printf in libc
     deactivate ld.so
     activate libc
     libc->>main: return
     deactivate libc
+    activate main
 
     note over main: printf("2")
     main->>printf_plt: call printf stub
+    deactivate main
     activate printf_plt
-    printf_plt->>printf_got: get printf address
+    printf_plt-->>printf_got: get printf address
     printf_plt->>libc: jump to actual printf in libc
     deactivate printf_plt
     activate libc
     libc->>main: return
     deactivate libc
-
-
-    deactivate main
 ```
 
 #### Viewing the PLT
