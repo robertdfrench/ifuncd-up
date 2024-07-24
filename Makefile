@@ -17,9 +17,6 @@ cpu_demo: cpu_demo.exe #: Detect CPU features
 	$(call banner, $@)
 	./$<
 
-ifunc_late: ifunc_late.exe #: 
-	./$<
-
 %.dylibs: %.exe
 	objdump -p $< | grep NEEDED
 
@@ -88,6 +85,9 @@ tty_demo: tty_demo.exe #: Print color for tty, plaintext for file
 %.time: %.exe
 	$(call banner, Timing $<)
 	time -p ./$<
+
+vector_add.exe: code/vector_add.c
+	gcc -Wpsabi -o $@ $<
 
 plt_example.exe: code/plt_example.c
 	gcc -fPIC -no-pie -o $@ $<
