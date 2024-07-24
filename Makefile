@@ -23,6 +23,9 @@ ifunc_late: ifunc_late.exe #:
 %.dylibs: %.exe
 	objdump -p $< | grep NEEDED
 
+%.ldd: %.exe
+	ldd $<
+
 %.got: %.exe
 	objdump -R $<
 

@@ -10,10 +10,47 @@ program is executed, functions and variables can be imported from
 is called, and is handled automatically for you by a tool called
 [`ld.so(8)`][kerrisk]. This process is called *dynamic linking*.
 
-To understand how dynamic linking works, and the role it played in
-CVE-2024-3094, we'll need to talk two parts of a binary that make it
-work: the [Global Offset Table](#global-offset-table) and the [Procedure
-Linkage Table](#procedure-linkage-table).
+As an example, take a look at [`hello_world.c`](code/hello_world.c).
+This is a simple "Hello World"-style program that calls `printf` to
+print the name of the running program. Because printf itself is not
+defined in your program, you'll need to import a suitable definition
+from a dynamic library.
+
+You can use the [objdump(1)][objdump] command to see a list of dynamic
+libraries that your program will need in order to start up correctly.
+Run `make hello_world.dylibs`, to see an example of this with the
+`hello_world.c` program:
+
+```console
+$ make hello_world.dylibs
+gcc -o hello_world.exe code/hello_world.c
+objdump -p hello_world.exe | grep NEEDED
+  NEEDED               libc.so.6
+```
+
+This tells us that our program wants to import a dynamic library called
+"libc". For most Linux distros, this is [The GNU C Library][glibc]. In
+order to see where `ld.so` expects to find this library, you can run
+`make hello_world.ldd`:
+
+```console
+$ make hello_world.ldd
+ldd hello_world.exe
+        linux-vdso.so.1 (0x00007ffd56350000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6
+(0x00007f6de4c42000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f6de4e2f000)
+```
+
+([ldd][ldd] can be handy for debugging dependency resolution issues, but
+be careful using it on binaries that you don't trust: it allows
+binaries to execute [arbitrary code][catonmat] to determine what
+libraries they need)
+
+To understand the role that dynamic linking played in CVE-2024-3094,
+we'll need to talk two parts of a binary that make it work: the [Global
+Offset Table](#global-offset-table) and the [Procedure Linkage
+Table](#procedure-linkage-table).
 
 
 
@@ -73,7 +110,7 @@ will try to find this variable in [The GNU C Library][glibc] and place
 its address into the GOT. Every part of the program that needs to access
 `environ` will do so by using its *offset*. In this case, 0x4020.
 
-Here's what the whole ball of wax looks like if we try to draw it out:
+Here's what the whole ball of wax looks like:
 
 ```mermaid
 flowchart TD
@@ -100,10 +137,10 @@ necessarily knowing where all of their symbols are ahead of time.
 
 
 ### Procedure Linkage Table
-The Procedure Linking Table (PLT) uses the GOT to help programs to
-invoke dynamic functions. But it is not a table in the same sense;
-rather, the PLT is a set of stub functions, one for each dynamic
-function in your application.
+The Procedure Linking Table (PLT) uses the GOT to help programs invoke
+dynamic functions. But it is not a table in the same sense; rather, the
+PLT is a set of stub functions, one for each dynamic function in your
+application.
 
 Each of these stub functions, when called, will simply jump to the
 address listed in the corresponding GOT entry. So if your program calls
@@ -175,30 +212,65 @@ sequenceDiagram
 ```
 
 #### Viewing the PLT
-As an example, take a look at [`hello_world.c`](code/hello_world.c).
-This is a simple "Hello World"-style program that calls `printf(3)` to
-print the name of the running program. Because printf itself is not
-defined in your program, you'll need to import a suitable definition
-from a dynamic library.
+You can use [objdump(1)][objdump] to inspect the PLT entries of any
+binary. Take a look at [`plt_example.c`](code/plt_example.c):
 
-If you run `make hello_world.dylibs`, you can see the list of dynamic
-libraries that your program will need to have in order to start up
-correctly:
+```c
+int main() {
+    const char *message = "Hello, World!\n";
+    size_t len = strlen(message); // Here's one
 
-```console
-$ make hello_world.dylibs
-gcc -o hello_world.exe code/hello_world.c
-objdump -p hello_world.exe | grep NEEDED
-  NEEDED               libc.so.6
+    write(0, message, len); // Here's another
+    exit(0); // And here's the last one
+    return 0;
+}
 ```
 
-This tells us that our program wants to import a dynamic library called
-"libc". For most Linux distros, this is [The GNU C Library][glibc].
+This program uses three different dynamic functions: strlen, write, and
+exit. If we compile and then disassemble this program, we'll be able to
+see what the PLT entries look like for each of these functions:
 
-For every dynamic function that your program needs to import, the
-compiler will create a "stub" function in the Procedure
-Linkage Table (PLT). 
+```console
+$ make plt_example.plt
+gcc -fPIC -no-pie -o plt_example.exe code/plt_example.c
+objdump -d -r plt_example.exe \
+        | awk '/section/ { plt=0 }; /section .plt/ { plt=1 }; { if (plt) { print } }'
+Disassembly of section .plt:
 
+0000000000401020 <write@plt-0x10>:
+  401020:       ff 35 ca 2f 00 00       push   0x2fca(%rip)        # 403ff0 <_GLOBAL_OFFSET_TABLE_+0x8>
+  401026:       ff 25 cc 2f 00 00       jmp    *0x2fcc(%rip)        # 403ff8 <_GLOBAL_OFFSET_TABLE_+0x10>
+  40102c:       0f 1f 40 00             nopl   0x0(%rax)
+
+0000000000401030 <write@plt>:
+  401030:       ff 25 ca 2f 00 00       jmp    *0x2fca(%rip)        # 404000 <write@GLIBC_2.2.5>
+  401036:       68 00 00 00 00          push   $0x0
+  40103b:       e9 e0 ff ff ff          jmp    401020 <_init+0x20>
+
+0000000000401040 <strlen@plt>:
+  401040:       ff 25 c2 2f 00 00       jmp    *0x2fc2(%rip)        # 404008 <strlen@GLIBC_2.2.5>
+  401046:       68 01 00 00 00          push   $0x1
+  40104b:       e9 d0 ff ff ff          jmp    401020 <_init+0x20>
+
+0000000000401050 <exit@plt>:
+  401050:       ff 25 ba 2f 00 00       jmp    *0x2fba(%rip)        # 404010 <exit@GLIBC_2.2.5>
+  401056:       68 02 00 00 00          push   $0x2
+  40105b:       e9 c0 ff ff ff          jmp    401020 <_init+0x20>
+```
+
+The compiler created four PLT entries: one for each of the dynamic
+functions, and one to call into `ld.so` to do the actual resolution work
+(if necessary). You can see that these entries are all very simple: they
+try to jump to whatever address is stored in their corresponding GOT
+entry. If that fails (if the jump address is actually just the current
+address), then they push an identifier onto the stack and jump into the
+resolver function itself.
+
+Each dynamic function has its own identifier: look at the push
+statements for the last three PLT entries and you'll see that they all
+push different values. These values identify the row in the GOT where
+the addresses of the actual dynamic functions will be stored, once
+`ld.so` has resolved them.
 
 
 ### RELRO
@@ -232,8 +304,15 @@ RELRO           STACK CANARY      NX            PIE             RPATH      RUNPA
 Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   36 Symbols        No    0               0               ./plt_example.exe
 ```
 
+The tie-in for CVE-2024-3094 is that if *any* level of RELRO is enabled,
+all IFUNCs will be resolved before `main` is called. So, we lose all the
+startup performance benefits of lazy bindings.
+
+[catonmat]: https://catonmat.net/ldd-arbitrary-code-execution
 [checksec]: https://man.archlinux.org/man/checksec.1.en
 [glibc]: https://www.gnu.org/software/libc/
 [kerrisk]: https://www.man7.org/linux/man-pages/man8/ld.so.8.html
+[ldd]: https://www.man7.org/linux/man-pages/man1/ldd.1.html
 [mprotect]: https://www.man7.org/linux/man-pages/man2/mprotect.2.html
+[objdump]: https://www.man7.org/linux/man-pages/man1/objdump.1.html
 [sidhpurwala]: https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
