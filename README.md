@@ -486,12 +486,12 @@ than ifunc in the case where we have just a single CPU feature to check.
 
 ## Conclusion
 GNU IFUNC is a niche feature of gcc/ld.so that few people knew about
-before it was used in CVE-2024-3094. It is has non-obvious pitfalls and
+before it was used in CVE-2024-3094. It has non-obvious pitfalls and
 insufficient documentation. By letting the linker run arbitrary code
 before `main`, before critical parts of the process image have been
 initialized and protected, it undermines one of the most basic
-assumptions of programming: that loading a library will *modify* your
-program rather than simply *extending* it.
+assumptions of programming: that the mere act of loading a library will
+not inherently *change* your program.
 
 The performance benefits of IFUNC are real, but not meaningfully better
 than alternatives. The simplicity of deploying a single binary that is
