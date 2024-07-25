@@ -10,7 +10,15 @@ program is executed, functions and variables can be imported from
 is called, and is handled automatically for you by a tool called
 [`ld.so(8)`][kerrisk]. This process is called *dynamic linking*.
 
-As an example, take a look at [`hello_world.c`](code/hello_world.c).
+As an example, take a look at [`hello_world.c`](code/hello_world.c):
+
+```c
+int main(int argc, char** argv) {
+    printf("Hello from %s!\n", argv[0]);
+    return 0;
+}
+```
+
 This is a simple "Hello World"-style program that calls `printf` to
 print the name of the running program. Because printf itself is not
 defined in your program, you'll need to import a suitable definition
