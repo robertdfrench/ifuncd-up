@@ -275,8 +275,8 @@ It isn't just IFUNC either. Apple Mach-O has a similar feature called
 
 ### It Undermines RELRO
 By allowing arbitrary code to run while the Global Offset Table is still
-writable, protections afforded by [RELRO](dynamic_linking.md#RELRO) are
-rendered moot.
+writable, protections afforded by [RELRO](dynamic_linking.md#relro) are
+[rendered moot][binarly-io]. 
 
 
 ### It's Not Always Necessary
@@ -433,6 +433,7 @@ than ifunc in the case where we have just a single CPU feature to check.
 [aes-ni]: https://en.wikipedia.org/wiki/AES_instruction_set
 [agner]: https://www.agner.org/optimize/blog/read.php?i=167
 [biebl]: https://salsa.debian.org/ssh-team/openssh/-/commit/818791ef8edf087481bd49eb32335c8d7e1953d6
+[binarly-io]: https://github.com/binarly-io/binary-risk-intelligence/tree/master/xz-backdoor
 [catonmat]: https://catonmat.net/simple-ld-preload-tutorial
 [conway]: https://en.wikipedia.org/wiki/Conway's_law
 [djmdjm]: https://github.com/openssh/openssh-portable/pull/251#issuecomment-2027935208
