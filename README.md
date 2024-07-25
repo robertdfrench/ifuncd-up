@@ -159,7 +159,7 @@ right hand of xz-utils was doing.
 
 ## What is GNU IFUNC *supposed* do?
 It allows you to determine, at runtime, which version of some function
-you'd like to use. It does this by giving you to an opportunity to run
+you'd like to use. It does this by giving you an opportunity to run
 **arbitrary code** to influence how the linker resolves symbols.
 
 ![](memes/ifunc_hard_right.png)
@@ -169,10 +169,10 @@ you'd like to use. It does this by giving you to an opportunity to run
 ### Detecting CPU Features
 Suppose you have an application that must run on a wide variety of x86
 CPUs.  Depending on the specific features of the current CPU, you may
-prefer to use different algorithms for the same task. The idea behind
-IFUNC was to allow programs to check for CPU features the first time a
-function is called, and thereafter use an implementation that will be
-most appropriate for that CPU.
+prefer to use different algorithms for the same task. The original idea
+behind IFUNC was to allow programs to check for CPU features the first
+time a function is called, and thereafter use an implementation that
+will be most appropriate for that CPU.
 
 Take a look at [`cpu_demo.c`](code/cpu_demo.c):
 
@@ -271,7 +271,7 @@ they are closely connected with the compiler and linker teams who
 actually implement IFUNC. They are in the best position to understand
 the tradeoffs, and there are tons of libc functions that benefit from
 CPU-specific implementations. I believe we should consider IFUNC to be
-an internal interface for glibc, and limit its use in other
+an internal interface for glibc, and avoid its use in other
 applications.
 
 
@@ -423,7 +423,7 @@ Here is the overall logic:
 
 As a control, there is also
 [`speed_demo_fixed.c`](code/speed_demo_fixed.c) which does the same
-incrementer work but without any dynamically resolve functions.  This
+incrementer work but without any dynamically resolved functions.  This
 can be used to get a help estimate what part of the runtime is dedicated
 to function invocation vs what part is just doing addition.
 
@@ -445,8 +445,9 @@ it does to invoke a function pointer 2 billion times.
 
 Does this matter in real life? Absolutely not. Functions that are worth
 optimizing are much more expensive than the "increment by one" functions
-that we are analyzing here. It is interesting because GNU IFUNC claims
-to be a boon for performance.
+that we are analyzing here. It is only interesting because GNU IFUNC
+claims to be a boon for performance, yet seems to incur more cost than
+function pointers.
 
 
 #### Performance of Other Techniques
@@ -483,9 +484,28 @@ than ifunc in the case where we have just a single CPU feature to check.
 
 
 
-## Recap
+## Conclusion
+GNU IFUNC is a niche feature of gcc/ld.so that few people knew about
+before it was used in CVE-2024-3094. It is has non-obvious pitfalls and
+insufficient documentation. By letting the linker run arbitrary code
+before `main`, before critical parts of the process image have been
+initialized and protected, it undermines one of the most basic
+assumptions of programming: that loading a library will *modify* your
+program rather than simply *extending* it.
+
+The performance benefits of IFUNC are real, but not meaningfully better
+than alternatives. The simplicity of deploying a single binary that is
+optimized for multiple CPUs is very attractive, but it can be
+accomplished with simpler techniques (like function pointers).
+
+I believe IFUNC should be disabled by default in gcc. Enabling it should
+require a scary looking flag, such as `--enable-cve-2024-3094`. Anyone
+using it outside of libc should be expected to provide a rigorous,
+well-researched argument that no alternative solution is appropriate.
+
 ![Yes, all shared libraries](memes/brain.png)
 
+<!-- REFERENCES -->
 [aes-ni]: https://en.wikipedia.org/wiki/AES_instruction_set
 [agner]: https://www.agner.org/optimize/blog/read.php?i=167
 [biebl]: https://salsa.debian.org/ssh-team/openssh/-/commit/818791ef8edf087481bd49eb32335c8d7e1953d6
