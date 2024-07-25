@@ -1,4 +1,4 @@
-## Understanding Dynamic Linking on Linux
+# Understanding Dynamic Linking on Linux
 At its core, CVE-2024-3094 was an attack on dynamic linking. The same
 thing could happen to any networked application which depends on
 3rd-party dynamic libraries. To understand this attack, you need to know
@@ -38,48 +38,55 @@ $ objdump -p hello_world.exe | grep NEEDED
   NEEDED               libc.so.6
 ```
 
-This tells us that our program wants to import a dynamic library called
+This tells `ld.so` that our program wants to import a dynamic library called
 "libc". For most Linux distros, this is [The GNU C Library][glibc]. In
-order to see where `ld.so` expects to find this library, you can run
-`make hello_world.ldd`:
+order to see where `ld.so` expects to find this library, you can use the
+[`ldd(1)`][ldd] command:
 
 ```console
-$ make hello_world.ldd
-ldd hello_world.exe
+$ ldd hello_world.exe
         linux-vdso.so.1 (0x00007ffd56350000)
         libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6
 (0x00007f6de4c42000)
         /lib64/ld-linux-x86-64.so.2 (0x00007f6de4e2f000)
 ```
 
-([ldd][ldd] can be handy for debugging dependency resolution issues, but
+(`ldd` can be handy for debugging dependency resolution issues, but
 be careful using it on binaries that you don't trust: it allows
 binaries to execute [arbitrary code][catonmat] to determine what
 libraries they need)
 
 To understand the role that dynamic linking played in CVE-2024-3094,
 we'll need to talk two parts of a binary that make it work: the [Global
-Offset Table](#global-offset-table) and the [Procedure Linkage
-Table](#procedure-linkage-table).
+Offset Table](#the-global-offset-table) and the [Procedure Linkage
+Table](#the-procedure-linkage-table).
 
 
 
-### Global Offset Table
+## The Global Offset Table
 Before we look at how functions are loaded, let's take a look at how
 variables are loaded from shared libraries.
 
 The [`environ.c`](code/environ.c) file shows an example of an *extern*
-variable in C. This is a variable whose value we expect to be provided
-by a shared library at runtime; it is not the responsibility of our
-program to create or initialize it.
-
-When gcc sees an extern declaration like this:
+variable in C:
 
 ```c
 extern char **environ;
+
+int main() {
+    printf("Address of environ: %p\n", (void*)&environ);
+    printf("First environment variable: %s\n", environ[0]);
+    return 0;
+}
 ```
 
-it prepares an entry for it in the binary's Global Offset Table (GOT).
+
+This is a variable whose value we expect to be provided
+by a shared library at runtime; it is not the responsibility of our
+program to create or initialize it.
+
+When gcc sees an extern declaration like `extern char **environ;`, it
+prepares an entry for it in the binary's Global Offset Table (GOT).
 When your program is loaded into memory, it is the responsibility of the
 dynamic linker (`ld.so`) to find the address of the `environ` variable
 and write it into the GOT.
@@ -90,13 +97,13 @@ located once the linker finds it. Each extern variable gets its own
 entry in the GOT where the dynamic linker can store this address once
 the correct symbol has been found.
 
-If you run `make environ.got` you can see the entries that the compiler
-has created for the `environ.c` program:
+If you compile `environ.c` and run `objdump`, you can see the entries
+that the compiler has creates for this program:
 
 ```console
-$ make environ.got
+$ make environ.exe
 gcc -o environ.exe code/environ.c
-objdump -R environ.exe
+$ objdump -R environ.exe
 
 environ.exe:     file format elf64-x86-64
 
@@ -146,7 +153,7 @@ necessarily knowing where all of their symbols are ahead of time.
 
 
 
-### Procedure Linkage Table
+## The Procedure Linkage Table
 The Procedure Linking Table (PLT) uses the GOT to help programs invoke
 dynamic functions. But it is not a table in the same sense; rather, the
 PLT is a set of stub functions, one for each dynamic function in your
@@ -221,7 +228,7 @@ sequenceDiagram
     deactivate libc
 ```
 
-#### Viewing the PLT
+### Viewing the PLT
 You can use [objdump(1)][objdump] to inspect the PLT entries of any
 binary. Take a look at [`plt_example.c`](code/plt_example.c):
 
@@ -236,9 +243,10 @@ int main() {
 }
 ```
 
-This program uses three different dynamic functions: strlen, write, and
-exit. If we compile and then disassemble this program, we'll be able to
-see what the PLT entries look like for each of these functions:
+This program uses three different dynamic functions: `strlen(3)`,
+`write(2)`, and `exit(3)`. If we compile and then disassemble this
+program, we'll be able to see what the PLT entries look like for each of
+these functions:
 
 ```console
 $ make plt_example.plt
@@ -268,13 +276,19 @@ Disassembly of section .plt:
   40105b:       e9 c0 ff ff ff          jmp    401020 <_init+0x20>
 ```
 
-The compiler created four PLT entries: one for each of the dynamic
-functions, and one to call into `ld.so` to do the actual resolution work
-(if necessary). You can see that these entries are all very simple: they
+The compiler created four PLT entries:
+
+* `<write@plt-0x10>`: This is used by the other PLT entries to call
+  resolver logic from `ld.so`
+* `<write@plt>`: This is a stub for `write(2)`
+* `<strlen@plt>`: This is a stub for `strlen(3)`
+* `<exit@plt>`: This is a stub for `exit(3)`
+
+You can see that these entries are all very simple: they
 try to jump to whatever address is stored in their corresponding GOT
 entry. If that fails (if the jump address is actually just the current
 address), then they push an identifier onto the stack and jump into the
-resolver function itself.
+resolver function itself (via `<write@plt-0x10>`).
 
 Each dynamic function has its own identifier: look at the push
 statements for the last three PLT entries and you'll see that they all
@@ -283,18 +297,19 @@ the addresses of the actual dynamic functions will be stored, once
 `ld.so` has resolved them.
 
 
-### RELRO
+## RELRO
 ![](memes/boromir_got.png)
 
 Updating the GOT at runtime means that the memory page containing the
-GOT must always be writable. This isn't ideal from a security
-perspective.  An attacker who can inject a malicious payload into the
-program may be able to overwrite values in the GOT, giving them some
-control over how the program behaves. To prevent this, GCC introduced an
-option called [Relocation Read-only][sidhpurwala] or "RELRO".
+GOT must be writable. This isn't ideal from a security perspective.  An
+attacker who can inject a malicious payload into the program may be able
+to overwrite values in the GOT, giving them some control over how the
+program behaves. In fact, [this is exactly what happened in
+CVE-2024-3094][binarly-io].
 
-RELRO comes in two flavors: Full and Partial. Partial RELRO tells the
-dynamic linker to do the following:
+To prevent this, GCC introduced an option called [Relocation
+Read-only][sidhpurwala] or "RELRO".  RELRO comes in two flavors: Full
+and Partial. Partial RELRO tells the dynamic linker to do the following:
 
 * Resolve GOT entries for all `extern` variables
 * Mark these entries read-only by calling [`mprotect(2)`][mprotect]
@@ -316,8 +331,10 @@ Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RU
 
 The tie-in for CVE-2024-3094 is that if *any* level of RELRO is enabled,
 all IFUNCs will be resolved before `main` is called. So, we lose all the
-startup performance benefits of lazy bindings.
+startup performance benefits of lazy bindings, and (as we now know),
+malicious IFUNC logic could upend RELRO anyhow.
 
+[binarly-io]: https://github.com/binarly-io/binary-risk-intelligence/tree/master/xz-backdoor
 [catonmat]: https://catonmat.net/ldd-arbitrary-code-execution
 [checksec]: https://man.archlinux.org/man/checksec.1.en
 [glibc]: https://www.gnu.org/software/libc/
