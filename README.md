@@ -254,52 +254,6 @@ uses an IFUNC that you've declared.
 
 
 
-### Isn't that just function pointers?
-Yes, it's like function pointers, but slower:
-
-```console
-$ make speed_demo
-
-# Timing speed_demo_ifunc.exe
-time -p ./speed_demo_ifunc.exe
-real 9.20
-user 9.02
-sys 0.00
-
-# Timing speed_demo_pointer.exe
-time -p ./speed_demo_pointer.exe
-real 5.97
-user 5.91
-sys 0.00
-```
-
-I'll give a more [rigorous analysis](#performance-overhead) later in
-this document, but for now just understand that using GNU IFUNC incurs a
-little extra overhead, even though it exists for the sake of performance
-optimizations.
-
-
-
-### Can't I accomplish the same thing with `LD_PRELOAD`?
-Sortof! GNU IFUNC allows developers to make runtime decisions about
-which version of a function is best to use. If you know what decisions
-need to be made (and you have a separate copy of your dynamic library
-for each case) then you could accomplish the same thing by specifying
-the right library with `$LD_PRELOAD` like so:
-
-```bash
-#!/bin/bash
-if (cat /proc/cpuinfo | grep flags | grep avx2 > /dev/null); then
-	LD_PRELOAD=./myfunc_avx2.so ./my_app
-else
-	LD_PRELOAD=./myfunc_normal.so ./my_app
-fi
-```
-
-(If you are unfamiliar with `LD_PRELOAD`, check out catonmat's ["A Simple
-`LD_PRELOAD` Tutorial"][catonmat].)
-
-
 
 
 ## IFUNC is Probably a Bad Idea
@@ -358,7 +312,10 @@ a safety feature designed to *protect dynamic libraries*.
 
 ### It's Not Always Necessary
 There are multiple other ways to handle this situation. They each have
-different tradeoffs, but they are all far simpler than IFUNC.
+different tradeoffs, but they are all far simpler than IFUNC. All of
+these are more portable than IFUNC, easier to understand, and harder to
+exploit.
+
 
 
 #### Global Function Pointers
@@ -399,6 +356,27 @@ is writable at runtime, whereas IFUNC+RELRO would ensure that the ifunc
 addresses in the GOT are immutable once they have been resolved.
 However, with a little extra legwork, we could use
 [`mprotect(2)`][mprotect] to mark such pointers read-only.
+
+
+
+#### Modifying `LD_PRELOAD`
+If you know what CPU features your code needs, and you have a separate
+copy of your dynamic library for each case, then you could accomplish
+the same thing by specifying the right library with `$LD_PRELOAD` like
+so:
+
+```bash
+#!/bin/bash
+if (cat /proc/cpuinfo | grep flags | grep avx2 > /dev/null); then
+	LD_PRELOAD=./myfunc_avx2.so ./my_app
+else
+	LD_PRELOAD=./myfunc_normal.so ./my_app
+fi
+```
+
+(If you are unfamiliar with `LD_PRELOAD`, check out catonmat's ["A Simple
+`LD_PRELOAD` Tutorial"][catonmat].)
+
 
 
 #### Separate Binaries per Feature Combination
