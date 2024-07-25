@@ -21,18 +21,20 @@ int main(int argc, char** argv) {
 
 This is a simple "Hello World"-style program that calls `printf` to
 print the name of the running program. Because printf itself is not
-defined in your program, you'll need to import a suitable definition
-from a dynamic library.
+defined in your program, the linker will need to import a suitable
+definition from a dynamic library when your program starts up. But how
+will the linker know which library to use?
 
-You can use the [objdump(1)][objdump] command to see a list of dynamic
-libraries that your program will need in order to start up correctly.
-Run `make hello_world.dylibs`, to see an example of this with the
-`hello_world.c` program:
+Fortunately, the compiler stores information about which dynamic
+libraries are needed *in the binary itself*. You can use the
+[objdump(1)][objdump] command to see a list of dynamic libraries that
+your program will need in order to start up correctly. Simply compile
+the program and the run `objdump -p`:
 
 ```console
-$ make hello_world.dylibs
+$ make hello_world.exe
 gcc -o hello_world.exe code/hello_world.c
-objdump -p hello_world.exe | grep NEEDED
+$ objdump -p hello_world.exe | grep NEEDED
   NEEDED               libc.so.6
 ```
 
