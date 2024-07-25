@@ -163,6 +163,9 @@ you'd like to use. It does this by giving you to an opportunity to run
 
 ![](memes/ifunc_hard_right.png)
 
+
+
+### Detecting CPU Features
 Suppose you have an application that must run on a wide variety of x86
 CPUs.  Depending on the specific features of the current CPU, you may
 prefer to use different algorithms for the same task. The idea behind
@@ -170,21 +173,86 @@ IFUNC was to allow programs to check for CPU features the first time a
 function is called, and thereafter use an implementation that will be
 most appropriate for that CPU.
 
-Take a look at [`cpu_demo.c`](code/cpu_demo.c). This file shows the most
-common use of IFUNC: it asks the CPU whether or not it supports certain
-features, and provides a different *implementation* of a function
-depending on what features are supported. In this case, our function
-`print_cpu_info` will end up printing either "AVX2 is present" or
-"SSE4.2 is present" depending on how ancient your CPU is.
+Take a look at [`cpu_demo.c`](code/cpu_demo.c):
 
-Unfortunately, IFUNC can be used for other purposes, as Sam James
-explains in [FAQ on the xz-utils backdoor (CVE-2024-3094)][thesamesam].
-You can see an example of this in [`tty_demo.c`](code/tty_demo.c).  This
-is a toy program that prints "Hello World!" when its stdout is a file,
-but prints that message using green text if its output is a terminal. It
-uses IFUNC to load the appropriate implementation when the program
-starts.
+```c
+void print_cpu_info() __attribute__((ifunc ("resolve_cpu_info")));
+void print_avx2() { printf("AVX2 is present.\n"); }
+void print_nope() { printf("AVX2 is missing.\n"); }
 
+static void* resolve_cpu_info(void) {
+    __builtin_cpu_init();
+
+	if (__builtin_cpu_supports("avx2")) {
+		return print_avx2;
+	} else {
+		return print_nope;
+	}
+}
+
+int main() {
+	print_cpu_info();
+	return 0;
+}
+```
+
+This program shows the most common use of IFUNC: it asks the CPU whether
+or not it supports certain features, and provides a different
+*implementation* of a function depending on what features are supported.
+In this case, our function `print_cpu_info` will end up printing either
+"AVX2 is present" or "AVX2 is missing" depending on how ancient your
+CPU is.
+
+
+
+### Probing the Process Environment
+While IFUNC is intended for probing CPU capabilities, nothing stops you
+from running more complicated code in your resolvers. For example,
+[`tty_demo.c`](code/tty_demo.c) shows how you can load a different
+function implementation depending on whether STDOUT is a file or a
+terminal: 
+
+```c
+// Print Green text to the Terminal
+void print_to_tty(const char *message) {
+    const char *green_start = "\033[32m";
+    const char *color_reset = "\033[0m";
+    printf("%sTTY: %s%s\n", green_start, message, color_reset);
+}
+
+// Print plain text to a file
+void print_to_file(const char *message) {
+    printf("FILE: %s\n", message);
+}
+
+void print_message(const char *message) \
+    __attribute__((ifunc("resolve_print_function")));
+
+void (*resolve_print_function(void))(const char *) {
+    struct termios term;
+
+    // Ask the kernel whether stdout is a file or a tty
+    int result = ioctl(STDOUT_FILENO, TCGETS, &term);
+    if (result == 0) {
+        // stdout is a terminal
+        return print_to_tty;
+    } else {
+        // stdout is not a terminal
+        return print_to_file;
+    }
+}
+
+int main() {
+    print_message("Hello, World!");
+    return 0;
+}
+```
+
+This is not really the intended use of IFUNC, but it shows what's
+possible: you can run arbitrary code before `main` in any program that
+uses an IFUNC that you've declared.
+
+![](memes/rock_linker.png)
 
 
 ### Isn't that just function pointers?
