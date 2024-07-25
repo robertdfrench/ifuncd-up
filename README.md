@@ -345,6 +345,16 @@ By allowing arbitrary code to run while the Global Offset Table is still
 writable, protections afforded by [RELRO](dynamic_linking.md#relro) are
 [rendered moot][binarly-io]. 
 
+This is important to note, because RELRO advertises itself as a way to
+protect the integrity of dynamically-loaded symbols. From a user
+perspective (you, as a user of the compiler and the linker), this
+violates the [Principle of Least Astonishment][pola]: no reasonable
+person would expect that *loading a dynamic library* should compromise
+a safety feature designed to *protect dynamic libraries*.
+
+![](memes/linker_social_engineering.png)
+
+
 
 ### It's Not Always Necessary
 There are multiple other ways to handle this situation. They each have
@@ -519,6 +529,7 @@ than ifunc in the case where we have just a single CPU feature to check.
 [odonell]: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70082#c0
 [OpenSSH9.8p1]: https://www.openssh.com/releasenotes.html#9.8p1
 [openssh-unix-dev]: https://marc.info/?l=openssh-unix-dev&m=171288895109872&w=2
+[pola]: https://en.wikipedia.org/wiki/Principle_of_least_astonishment
 [rjmccall]: https://reviews.llvm.org/D139163#3993795
 [schmidt]: https://bugzilla.redhat.com/show_bug.cgi?id=1381997#c4
 [sourceware]: https://sourceware.org/glibc/wiki/GNU_IFUNC
