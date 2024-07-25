@@ -332,7 +332,7 @@ Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RU
 The tie-in for CVE-2024-3094 is that if *any* level of RELRO is enabled,
 all IFUNCs will be resolved before `main` is called. So, we lose all the
 startup performance benefits of lazy bindings, and (as we now know),
-malicious IFUNC logic could upend RELRO anyhow.
+malicious IFUNC logic could [upend RELRO][relro] anyhow.
 
 [binarly-io]: https://github.com/binarly-io/binary-risk-intelligence/tree/master/xz-backdoor
 [catonmat]: https://catonmat.net/ldd-arbitrary-code-execution
@@ -342,4 +342,5 @@ malicious IFUNC logic could upend RELRO anyhow.
 [ldd]: https://www.man7.org/linux/man-pages/man1/ldd.1.html
 [mprotect]: https://www.man7.org/linux/man-pages/man2/mprotect.2.html
 [objdump]: https://www.man7.org/linux/man-pages/man1/objdump.1.html
+[relro]: https://github.com/robertdfrench/ifuncd-up#it-undermines-relro
 [sidhpurwala]: https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
