@@ -16,9 +16,8 @@ software are what made this attack possible: [linking OpenSSH against
 SystemD][biebl], and the existence of [GNU IFUNC][sourceware].
 
 **Before You Start**: Much of this discussion deals with the intricacies
-of dynamic linking on Linux. If you are not already intimately familiar
-with this, check out [`dynamic_linking.md`](dynamic_linking.md) for a
-quick primer.
+of dynamic linking on Linux. If you need a refresher, check out
+[`dynamic_linking.md`](dynamic_linking.md).
  
 
 
@@ -274,6 +273,76 @@ It isn't just IFUNC either. Apple Mach-O has a similar feature called
 
 
 
+### It Undermines RELRO
+By allowing arbitrary code to run while the Global Offset Table is still
+writable, protections afforded by [RELRO](dynamic_linking.md#RELRO) are
+rendered moot.
+
+
+### It's Not Always Necessary
+There are multiple other ways to handle this situation. They each have
+different tradeoffs, but they are all far simpler than IFUNC.
+
+
+#### Global Function Pointers
+IFUNC is attractive because it allows developers to express function
+selection *declaratively* rather than *imperatively*. But doing this
+imperatively is not actually that hard. Consider
+[`static_pointer.c`](code/static_pointer.c), which resolves a global
+function pointer at runtime:
+
+```c
+static int (*triple)(int) = 0;
+int triple_sse42(int n) { return 3 * n; }
+int triple_plain(int n) { return n + n + n; }
+
+void print_fifteen() {
+	int fifteen = triple(5);
+	printf("%d\n", fifteen);
+}
+
+int main() {
+	__builtin_cpu_init();
+	if (__builtin_cpu_supports("sse4.2")) {
+		triple = triple_sse42;
+	} else {
+		triple = triple_plain;
+	}
+	
+	print_fifteen();
+	return 0;
+}
+```
+
+Is this really so bad that we need special gimmicks in the linker just
+to avoid it?
+
+One disadvantage to this approach is that the function pointer `triple`
+is writable at runtime, whereas IFUNC+RELRO would ensure that the ifunc
+addresses in the GOT are immutable once they have been resolved.
+However, with a little extra legwork, we could use
+[`mprotect(2)`][mprotect] to mark such pointers read-only.
+
+
+#### Separate Binaries per Feature Combination
+How many unique CPU feature combinations do you really need to support?
+How many even exist?
+
+On the face of it, this looks like a combinatorial explosion. There are
+dozens of different vector arithmetic, virtualization, and security
+extensions to the amd64 ISA. But these features do not occur
+independently in the wild. For example, no CPU that has AVX-512 lacks
+SSE4.2 or AES-NI.
+
+Knowing which CPU features your application needs, and
+which of them occur together on real chips, can help you determine
+how many distinct binaries you'd have to ship. It may not be as many as
+you'd expect. Most package managers allow you to run scripts at install
+time; you could ship multiple binaries in a single rpm or deb file and
+use install-time logic to choose the best one for the host CPU.
+
+
+
 ### It isn't Much Faster than Alternatives
 Given that the usual justification for ifunc is performance-related, I
 wanted to see how much overhead *ifunc itself* causes. After all, any
@@ -361,6 +430,7 @@ than ifunc in the case where we have just a single CPU feature to check.
 ## Recap
 ![Yes, all shared libraries](memes/brain.png)
 
+[aes-ni]: https://en.wikipedia.org/wiki/AES_instruction_set
 [agner]: https://www.agner.org/optimize/blog/read.php?i=167
 [biebl]: https://salsa.debian.org/ssh-team/openssh/-/commit/818791ef8edf087481bd49eb32335c8d7e1953d6
 [catonmat]: https://catonmat.net/simple-ld-preload-tutorial
@@ -374,6 +444,7 @@ than ifunc in the case where we have just a single CPU feature to check.
 [JiaT75]: https://github.com/tukaani-project/xz/commit/cf44e4b7f5dfdbf8c78aef377c10f71e274f63c0
 [keith]: https://keith.github.io/xcode-man-pages/ssh-add.1.html#apple-use-keychain
 [mindrot]: https://anongit.mindrot.org/openssh.git
+[mprotect]: https://www.man7.org/linux/man-pages/man2/mprotect.2.html
 [musl]: https://musl.libc.org
 [nagy]: https://sourceware.org/legacy-ml/libc-alpha/2015-11/msg00108.html
 [nvd]: https://nvd.nist.gov/vuln/detail/CVE-2024-3094
