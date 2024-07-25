@@ -252,7 +252,6 @@ This is not really the intended use of IFUNC, but it shows what's
 possible: you can run arbitrary code before `main` in any program that
 uses an IFUNC that you've declared.
 
-![](memes/rock_linker.png)
 
 
 ### Isn't that just function pointers?
