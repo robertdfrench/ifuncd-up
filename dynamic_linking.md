@@ -169,7 +169,7 @@ address of the dynamic function is not resolved until the first time
 that your program invokes it. This can save time at startup if your
 application has a large amount of dynamic symbols.
 
-Consider this program which calls `printf` three times:
+Consider this program which calls `printf` twice:
 
 ```c
 #include <stdio.h>
