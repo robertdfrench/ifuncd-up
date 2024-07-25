@@ -38,7 +38,7 @@ to rehash all that here, so the purposes of this article, here is a
 flowchart TD
     G["GNU IFUNC"]
     A["OpenSSH (OpenBSD)"]
-    B["OpenSSH Portable<br/>(Linux / macOS / etc)"]
+    B["Portable OpenSSH<br/>(Linux / macOS / etc)"]
     C[OpenSSH + IFUNC]
     D[xz-utils]
     E["SystemD (Linux)"]
@@ -55,7 +55,7 @@ flowchart TD
 ## Why do Linux Distros modify OpenSSH?
 The short answer is that they have to. OpenSSH is developed by the
 OpenBSD community, for the OpenBSD community, and they do not give a
-flying Fedora about Linux.  The [OpenSSH Portable][mindrot] project is a
+flying Fedora about Linux.  The [Portable OpenSSH][mindrot] project is a
 best-effort collection of patches which replace OpenBSD-specific
 components with generic POSIX components, and some platform-specific
 code where applicable. The software supply-chain for SSH ends up looking
@@ -73,7 +73,7 @@ flowchart TD
   H-->B
 
   B-->C
-  C[OpenSSH Portable]
+  C[Portable OpenSSH]
 
   subgraph Debian Folks
     D[Debian SSH]
@@ -94,13 +94,13 @@ flowchart TD
 
 OpenBSD's version of OpenSSH is upstream from everything else, and most
 improvements to it come from within the OpenBSD community. These changes
-flow downstream to the OpenSSH Portable project, which attempts to
+flow downstream to the Portable OpenSSH project, which attempts to
 re-implement new features in ways that aren't specific to OpenBSD. This
 is what allows SSH to work on platforms like Linux, macOS, FreeBSD, and
 even Windows. 
 
 But it doesn't stop there. Some operating systems apply further
-customization beyond what OpenSSH Portable provides. For example, Apple
+customization beyond what Portable OpenSSH provides. For example, Apple
 adds the [`--apple-use-keychain`][keith] flag to `ssh-add` to help it
 integrate with the macOS password manager.
 
@@ -112,7 +112,7 @@ chain for SSH began to look like this:
 ```mermaid
 flowchart TD
   A[OpenSSH]
-  B[OpenSSH Portable]
+  B[Portable OpenSSH]
   C[Debian SSH]
   D[Fedora SSH]
   A-->B
@@ -121,8 +121,8 @@ flowchart TD
   C<-->|SystemD Patches|D
 ```
 
-These patches never went into OpenSSH Portable, because the OpenSSH
-Portable folks were ["not interested in taking a dependency on
+These patches never went into Portable OpenSSH, because the Portable
+OpenSSH folks were ["not interested in taking a dependency on
 libsystemd"][djmdjm]. And they never went into upstream OpenSSH, because
 OpenBSD doesn't have any need to support SystemD.
 
