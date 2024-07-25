@@ -24,9 +24,10 @@ of dynamic linking on Linux. If you need a refresher, check out
 ## Quick Recap of CVE-2024-3094
 There are tons of good writeups outlining the high level details of the
 xz-utils backdoor, like Dan Goodin's [What we know about the xz Utils
-backdoor that almost infected the world][goodin1] and Thomas Roccia's
-[XZ Outbreak][fr0gger] diagram. We don't need to rehash all that here,
-so the purposes of this article, here is a **very coarse** recap:
+backdoor that almost infected the world][goodin1] and Sam James' [FAQ on
+the xz-utils backdoor (CVE-2024-3094)][thesamesam] gist. We don't need
+to rehash all that here, so the purposes of this article, here is a
+**very coarse** recap:
 
 * Some Linux distros modify OpenSSH to depend on SystemD
 * SystemD depends on xz-utils, which uses GNU IFUNC
