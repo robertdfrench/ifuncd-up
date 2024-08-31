@@ -28,6 +28,7 @@ cpu_demo: cpu_demo.exe #: Detect CPU features
 
 SPEED_DEMO_TIMES=speed_demo_ifunc.time \
 		speed_demo_pointer.time \
+		speed_demo_struct.time \
 		speed_demo_fixed.time \
 		speed_demo_always.time \
 		speed_demo_upfront.time
@@ -47,6 +48,7 @@ rigorous_speed_demo: clean $(RIGOROUS_SPEED_STATS) #: Really, how slow is it?
 RIDICULOUS_STATS=speed_demo_fixed.stats.txt \
 		speed_demo_ifunc.stats.txt \
 		speed_demo_pointer.stats.txt \
+		speed_demo_struct.stats.txt \
 		speed_demo_always.stats.txt \
 		speed_demo_upfront.stats.txt
 ridiculous_speed_demo: clean $(RIDICULOUS_STATS) #: Compare other techniques
@@ -54,6 +56,7 @@ ridiculous_speed_demo: clean $(RIDICULOUS_STATS) #: Compare other techniques
 	@echo "TEST	LOW	HIGH	AVG"
 	@printf "fixed\t"; cat speed_demo_fixed.stats.txt
 	@printf "pointer\t"; cat speed_demo_pointer.stats.txt
+	@printf "struct\t"; cat speed_demo_struct.stats.txt
 	@printf "ifunc\t"; cat speed_demo_ifunc.stats.txt
 	@printf "upfront\t"; cat speed_demo_upfront.stats.txt
 	@printf "always\t"; cat speed_demo_always.stats.txt
