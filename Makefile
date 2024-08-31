@@ -45,21 +45,21 @@ rigorous_speed_demo: clean $(RIGOROUS_SPEED_STATS) #: Really, how slow is it?
 	@printf "ifunc\t"; cat speed_demo_ifunc.stats.txt
 	@echo ""
 
-RIDICULOUS_STATS=speed_demo_fixed.stats.txt \
-		speed_demo_ifunc.stats.txt \
-		speed_demo_pointer.stats.txt \
-		speed_demo_struct.stats.txt \
-		speed_demo_always.stats.txt \
-		speed_demo_upfront.stats.txt
+RIDICULOUS_STATS=fixed.stats.txt \
+		ifunc.stats.txt \
+		pointer.stats.txt \
+		struct.stats.txt \
+		always.stats.txt \
+		upfront.stats.txt
 ridiculous_speed_demo: clean $(RIDICULOUS_STATS) #: Compare other techniques
 	$(call banner, Final Results)
 	@echo "TEST	LOW	HIGH	AVG"
-	@printf "fixed\t"; cat speed_demo_fixed.stats.txt
-	@printf "pointer\t"; cat speed_demo_pointer.stats.txt
-	@printf "struct\t"; cat speed_demo_struct.stats.txt
-	@printf "ifunc\t"; cat speed_demo_ifunc.stats.txt
-	@printf "upfront\t"; cat speed_demo_upfront.stats.txt
-	@printf "always\t"; cat speed_demo_always.stats.txt
+	@printf "fixed\t"; cat fixed.stats.txt
+	@printf "pointer\t"; cat pointer.stats.txt
+	@printf "struct\t"; cat struct.stats.txt
+	@printf "ifunc\t"; cat ifunc.stats.txt
+	@printf "upfront\t"; cat upfront.stats.txt
+	@printf "always\t"; cat always.stats.txt
 	@echo ""
 
 %.stats.txt: %.low.txt %.high.txt %.avg.txt
@@ -74,7 +74,7 @@ ridiculous_speed_demo: clean $(RIDICULOUS_STATS) #: Compare other techniques
 %.avg.txt: %.timings.txt
 	awk '{ sum += $$1 }; END { print sum/NR }' $< > $@
 
-%.timings.txt: %.exe
+%.timings.txt: code/speed_demo/%/main.exe
 	$(call banner, Sampling performance of $<)
 	(for i in `seq 1 10`; do \
 		time -f "%U" ./$<; \
@@ -95,8 +95,17 @@ vector_add.exe: code/vector_add.c
 plt_example.exe: code/plt_example.c
 	gcc -fPIC -no-pie -o $@ $<
 
-%.exe: code/%.c
+cpu_demo.exe: code/cpu_demo.c
 	gcc -o $@ $<
+
+tty_demo.exe: code/tty_demo.c
+	gcc -o $@ $<
+
+speed_demo_%.exe: code/speed_demo/%/main.exe
+	cp $< $@
+
+code/speed_demo/%/main.exe:
+	make -C code/speed_demo/$* main.exe
 
 %.plt: %.exe
 	objdump -d -r $< \
@@ -112,4 +121,10 @@ enter_container: docker_build.txt #: Run an interactive shell in the container
 	docker run -it -v $(PWD):/workspace ifuncd-up:latest
 
 clean:  #: Remove any build detritus
+	make -C code/speed_demo/always clean
+	make -C code/speed_demo/fixed clean
+	make -C code/speed_demo/ifunc clean
+	make -C code/speed_demo/pointer clean
+	make -C code/speed_demo/struct clean
+	make -C code/speed_demo/upfront clean
 	rm -f *.txt *.exe
