@@ -1,5 +1,6 @@
 # IFUNC'd up
-*Why you should stop blaming xz-utils for [CVE-2024-3094][nvd]*
+*Why you should stop blaming xz-utils for [CVE-2024-3094][nvd]. Also
+check out my [ETSA Talk](https://www.youtube.com/watch?v=7j8ZCDGwSr8)!*
 
 ![I think IFUNC'd up](memes/larry.jpeg)
 
