@@ -318,6 +318,11 @@ different tradeoffs, but they are all far simpler than IFUNC. All of
 these are more portable than IFUNC, easier to understand, and harder to
 exploit.
 
+> "Ifunc is just an utterly dumb way to do runtime microarch specific
+> code selection."
+>
+> -- [Rich Felker](https://hachyderm.io/@dalias/112952237145378821),
+> maintainer of [musl](https://musl.libc.org).
 
 
 #### Global Function Pointers
@@ -401,6 +406,15 @@ use install-time logic to choose the best one for the host CPU.
 
 
 ### It isn't Much Faster than Alternatives
+
+> What's been obvious to me for a long time is that, even if there were
+> a performance advantage to ifunc, it could only be when the entire
+> function call is so short that call overhead can be a significant
+> portion of overall time.
+>
+> -- [Rich Felker](https://hachyderm.io/@dalias/113074264762553873),
+> maintainer of [musl](https://musl.libc.org).
+
 Given that the usual justification for ifunc is performance-related, I
 wanted to see how much overhead *ifunc itself* causes. After all, any
 function worth optimizing is probably called frequently, so the overhead
