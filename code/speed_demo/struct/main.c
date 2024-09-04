@@ -4,25 +4,15 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
-static int counter = 0;
-
 struct myfuncs {
-	void (*increment_counter)();
+	int (*increment)(int);
 };
 
 static struct myfuncs *page;
 
 
-// Use this incrementer algorithm if AVX2 is available.
-void fancy_incrementer() {
-	counter += 1;
-}
-
-// Use this if AVX2 is not available. It's the same as above, because we don't
-// actually rely on AVX2. 
-void normal_incrementer() {
-	counter += 1;
-}
+int fancy_incrementer(int);
+int normal_incrementer(int);
 
 void initfuncs(void) {
 	int pagesize = getpagesize();
@@ -34,9 +24,9 @@ void initfuncs(void) {
 
 	__builtin_cpu_init();
 	if (__builtin_cpu_supports("avx2")) {
-		page->increment_counter = fancy_incrementer;
+		page->increment = fancy_incrementer;
 	} else {
-		page->increment_counter = normal_incrementer;
+		page->increment = normal_incrementer;
 	}
 
 	if(mprotect(page, pagesize, PROT_READ))
@@ -48,8 +38,9 @@ void initfuncs(void) {
 int main(void) {
 	initfuncs();
 
+        int counter = 0;
 	while (counter < INT_MAX) {
-		page->increment_counter();
+		counter = page->increment(counter);
 	}
 
 	return 0;

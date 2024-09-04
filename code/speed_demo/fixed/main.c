@@ -7,11 +7,13 @@
 // should be compared to the performance of this one.
 #include <limits.h>
 
+int increment(int);
+
 int main() {
 	int counter = 0;
 	// Count to ~ 2 Billion in a tight loop.
 	while (counter < INT_MAX) {
-		counter += 1;
+		counter = increment(counter);
 	}
 	return 0;
 }
