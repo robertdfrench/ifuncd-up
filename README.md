@@ -1,3 +1,74 @@
+# In Response to Hacker News
+I see you jokers on the orange website are giving me a hard time. I will make a few
+choice responses below, but first I offer a challenge: I will send **$500 of my own
+money** to the first person who can demonstrate *this attack* without ifunc. I am
+genuinely interested, and willing to pay to for the enlightenment. Fork this repo and
+submit a PR with your working PoC, I will solicit your mailing address privately if you
+win. Now for responses:
+
+> This is barking up the wrong tree.
+
+Kid, I *live* in the wrong tree, I can bark at whoever I want.
+
+> It was not essential to the exploit,
+
+*You're* not essential to the exploit!
+
+> There is always selinux if we want to add protection against arbitrary code running as
+> root. 
+
+Once loaded, this attack did not need to cross any further syscall boundaries. So yes,
+we could have constrained a "bonus" root session, but we still would have had uninvited
+guests on the machine!
+
+What is this, Bilbo's birthday?? No entrance except on party business!!
+
+> 1) IFUNC is hardly the only way to run code before main.
+
+But it is an unnecessary way to run code *before memory protection is set up*
+
+> 2) The alternative they present is arguably less secure because the function pointer
+> will remain writable for the life of the process, 
+
+We can mprovise with mprotect! See the last sentence above the [Modifying `LD_PRELOAD`](https://github.com/robertdfrench/ifuncd-up#modifying-ld_preload) subsection.
+
+> Yeah, this blog is misguided. 
+
+Excuse me this blog was *unguided*. I did all of these shenanigans myself! No one
+tricked me into being this stupid.
+
+> IFUNC should be implemented by software itself,
+
+@CountWSS I appreciate you comrade, thanks for showing up. 
+
+> a series of blatant process failures **from Github maintainer** through ...
+
+This is the only point I will respond to in earnest:
+
+I think it is extraordinarily unfair to the xz-utils maintainer and quite dangerous to
+the community to think about this as *beginning* with a mistake on his part. It began
+with no one giving a shit about helping maintain this project. The attacker depended on
+ifunc as a *technical vulnerability* and our collective negligence of xz-utils as a
+*social vulnerability*. I think it is shameful to see Mr. Collin's actions as anything
+other than a heroic, years-long dedication to community service.
+
+Also [Bruce Schneier agrees with
+me](https://www.schneier.com/blog/archives/2024/04/backdoor-in-xz-utils-that-almost-happened.html)
+so... hate it for ya, you're argument's toast.
+
+> The language may have been harsher than it needed to
+
+You aren't gonna believe how much my friends made me water this down first.
+
+> Linux distributions should not think so highly of themselves as to expect OpenBSD to
+> conform and adapt to their mess
+
+@debazel!!! Me gusta.
+
+> What complete horseshit.
+
+Okay, that part's accurate.
+
 # IFUNC'd up
 *Why you should stop blaming xz-utils for [CVE-2024-3094][nvd]. Also
 check out my [ETSA Talk](https://www.youtube.com/watch?v=7j8ZCDGwSr8)!*
