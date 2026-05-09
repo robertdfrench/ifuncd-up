@@ -37,9 +37,9 @@ We can mprovise with mprotect! See the last sentence above the [Modifying `LD_PR
 Excuse me this blog was *unguided*. I did all of these shenanigans myself! No one
 tricked me into being this stupid.
 
-> IFUNC should be implemented by software itself,
+> IFUNC should be implemented by [the client] software itself,
 
-@CountWSS I appreciate you comrade, thanks for showing up. 
+@CountWSS 💯 hell yeah
 
 > a series of blatant process failures **from Github maintainer** through ...
 
