@@ -1,5 +1,5 @@
 # In Response to Hacker News
-I see you jokers on the orange website are giving me a hard time. I will make a few
+I see you jokers on [the orange website][hn] are giving me a hard time. I will make a few
 choice responses below, but first I offer a challenge: I will send **$500 of my own
 money** to the first person who can demonstrate *this attack* without ifunc. I am
 genuinely interested, and willing to pay to for the enlightenment. Fork this repo and
@@ -493,8 +493,8 @@ of the function invocation is worth acknowledging.
 
 To figure this out, I designed an experiment that would call a
 *dynamically resolved* function over and over again in a tight loop.
-Take a look at [`speed_demo_ifunc.c`](code/speed_demo_ifunc.c) and
-[`speed_demo_pointer.c`](code/speed_demo_pointer.c).  These programs
+Take a look at [`speed_demo/ifunc`](code/speed_demo/ifunc/main.c) and
+[`speed_demo/pointer`](code/speed_demo/pointer/main.c).  These programs
 both do the same work (incrementing a static counter), but the
 incrementer functions are resolved in different ways: the former
 leverages GNU IFUNC, and the latter relies on plain old function
@@ -508,7 +508,7 @@ Here is the overall logic:
    of its cost.
 
 As a control, there is also
-[`speed_demo_fixed.c`](code/speed_demo_fixed.c) which does the same
+[`speed_demo/fixed`](code/speed_demo/fixed/main.c) which does the same
 incrementer work but without any dynamically resolved functions.  This
 can be used to get a help estimate what part of the runtime is dedicated
 to function invocation vs what part is just doing addition.
@@ -538,11 +538,11 @@ function pointers.
 
 #### Performance of Other Techniques
 There are other techniques which are slower than ifunc. Take a look at the
-`super_rigorous_speed_demo`, which brings to other experiments into play:
-[`speed_demo_upfront.c`](code/speed_demo_upfront.c) and
-[`speed_demo_always.c`](code/speed_demo_always.c).
+`super_rigorous_speed_demo`, which brings two other experiments into play:
+[`speed_demo/upfront`](code/speed_demo/upfront/main.c) and
+[`speed_demo/always`](code/speed_demo/always/main.c).
 
-`speed_demo_upfront.c` behaves similarly to `speed_demo_pointer.c`,
+`speed_demo/upfront` behaves similarly to `speed_demo/pointer`,
 except that it stores the results of the cpu feature checks in global
 variables rather than keeping track of a function pointer. This still
 requires a "resolver" function to run first to determine which
@@ -553,7 +553,7 @@ arbitrary values, boolean flags cannot. So an attacker able to modify
 these variables can make the program *slower*, but cannot make the
 program behave *differently*.
 
-`speed_demo_always.c` is designed to be the slowest technique -- it
+`speed_demo/always` is designed to be the slowest technique -- it
 checks all the necessary CPU features every time an implementation is
 needed and picks one on the fly. Curiously, this technique is not
 significantly slower than anything else. It is only marginally slower
@@ -603,6 +603,7 @@ well-researched argument that no alternative solution is appropriate.
 [freund]: https://www.openwall.com/lists/oss-security/2024/03/29/4
 [gnu-cfa]: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-ifunc-function-attribute
 [goodin1]: https://arstechnica.com/security/2024/04/what-we-know-about-the-xz-utils-backdoor-that-almost-infected-the-world/
+[hn]: https://news.ycombinator.com/item?id=48056749
 [jasoncc]: https://jasoncc.github.io/gnu_gcc_glibc/gnu-ifunc.html#relocations-and-pic
 [JiaT75]: https://github.com/tukaani-project/xz/commit/cf44e4b7f5dfdbf8c78aef377c10f71e274f63c0
 [keith]: https://keith.github.io/xcode-man-pages/ssh-add.1.html#apple-use-keychain
