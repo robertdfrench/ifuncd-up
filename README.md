@@ -54,7 +54,7 @@ other than a heroic, years-long dedication to community service.
 
 Also [Bruce Schneier agrees with
 me](https://www.schneier.com/blog/archives/2024/04/backdoor-in-xz-utils-that-almost-happened.html)
-so... hate it for ya, you're argument's toast.
+so... hate it for ya, your argument's toast.
 
 > The language may have been harsher than it needed to
 
