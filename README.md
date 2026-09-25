@@ -1,4 +1,6 @@
-# In Response to Hacker News
+<details>
+<summary><i>in response to Hacker News...</i></summary>
+
 I see you jokers on [the orange website][hn] are giving me a hard time. I will make a few
 choice responses below, but first I offer a challenge: I will send **$500 of my own
 money** to the first person who can demonstrate *this attack* without ifunc. I am
@@ -68,6 +70,7 @@ You aren't gonna believe how much my friends made me water this down first.
 > What complete horseshit.
 
 Okay, that part's accurate.
+</details>
 
 # IFUNC'd up
 *Why you should stop blaming xz-utils for [CVE-2024-3094][nvd]. Also
