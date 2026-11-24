@@ -2,11 +2,11 @@
 <summary><i>in response to Hacker News...</i></summary>
 
 I see you jokers on [the orange website][hn] are giving me a hard time. I will make a few
-choice responses below, but first I offer a challenge: I will send **$500 of my own
+choice responses below, but first I offer a challenge: ~I will send **$500 of my own
 money** to the first person who can demonstrate *this attack* without ifunc. I am
 genuinely interested, and willing to pay to for the enlightenment. Fork this repo and
 submit a PR with your working PoC, I will solicit your mailing address privately if you
-win. Now for responses:
+win~ (active embargo). Now for responses:
 
 > This is barking up the wrong tree.
 
